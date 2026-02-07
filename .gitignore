@@ -1,0 +1,116 @@
+.env
+venv/
+*venv
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# --- Entornos Virtuales ---
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# --- Variables de Entorno y Secretos ---
+.env
+.env.*
+!.env.example
+
+# --- FastAPI / Testing ---
+.pytest_cache/
+.coverage
+htmlcov/
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# --- Base de Datos (si usas SQLite local) ---
+*.db
+*.sqlite3
+
+# --- IDEs y Editores ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store (macOS)
+
+# =========================
+# PYTHON
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Entornos virtuales
+venv/
+.env/
+.venv/
+env/
+
+# Archivos de entorno
+.env
+.env.*
+
+# =========================
+# BASE DE DATOS
+# =========================
+*.sqlite3
+*.db
+
+# =========================
+# LOGS
+# =========================
+*.log
+
+# =========================
+# TEST / COVERAGE
+# =========================
+.coverage
+htmlcov/
+.pytest_cache/
+
+# =========================
+# IDEs
+# =========================
+.vscode/
+.idea/
+
+# =========================
+# SISTEMA
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# DOCKER
+# =========================
+docker-compose.override.yml
+
+# =========================
+# MYPY / CACHE
+# =========================
+.mypy_cache/
+.cache/
