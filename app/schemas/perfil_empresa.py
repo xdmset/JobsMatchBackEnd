@@ -12,7 +12,7 @@ class PerfilEmpresaCreate(PerfilEmpresaBase):
     pass
 
 class PerfilEmpresa(PerfilEmpresaBase):
-    user_id: int
+    usuario_id: int  # Modificado: de user_id a usuario_id
 
     class Config:
         from_attributes = True

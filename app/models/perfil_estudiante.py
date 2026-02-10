@@ -1,19 +1,20 @@
-from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey
-from app.db.base_class import Base
+from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey, Enum
 from sqlalchemy.orm import relationship
+from app.db.base_class import Base
 
 class PerfilEstudiante(Base):
     __tablename__ = "perfiles_estudiantes"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer,ForeignKey("users.id"), unique=True, nullable=False)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="CASCADE"), primary_key=True)
+    nombre_completo = Column(String(255))
+    institucion_educativa = Column(String(255))
+    nivel_academico = Column(String(255))
+    biografia = Column(Text)
+    habilidades = Column(JSON) # RF-02
+    cv_url = Column(String(255))
+    cv_tipo_archivo = Column(String(255))
+    foto_perfil_url = Column(String(255))
+    ubicacion = Column(String(255))
+    modalidad_preferida = Column(Enum('remoto', 'presencial', 'hibrido', name='modalidad_estudiante'))
 
     user = relationship("User", back_populates="perfil_estudiante")
-
-    nombre_completo = Column(String(100), nullable=False)
-    institucion_educativa = Column(String(100))
-    nivel_academico = Column(String(100))
-    biografia = Column(Text)
-    habilidades = Column(JSON)
-    ubicacion = Column(String(100))
-    modalidad_preferida = Column(String(50))
