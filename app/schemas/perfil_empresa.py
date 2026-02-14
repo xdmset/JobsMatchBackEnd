@@ -7,6 +7,7 @@ class PerfilEmpresaBase(BaseModel):
     descripcion: Optional[str] = None
     sitio_web: Optional[str] = None
     ubicacion_sede: Optional[str] = None
+    foto_perfil_url: Optional[str] = None
 
 class PerfilEmpresaCreate(PerfilEmpresaBase):
     pass

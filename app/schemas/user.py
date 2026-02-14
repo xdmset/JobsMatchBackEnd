@@ -1,6 +1,8 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
+from app.schemas.perfil_estudiante import PerfilEstudianteCreate
+from app.schemas.perfil_empresa import PerfilEmpresaCreate
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -9,6 +11,8 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
     rol_id: int
+    perfil_estudiante: Optional[PerfilEstudianteCreate] = None
+    perfil_empresa: Optional[PerfilEmpresaCreate] = None
 
 class User(UserBase):
     id: int

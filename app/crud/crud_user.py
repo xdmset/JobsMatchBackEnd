@@ -29,18 +29,16 @@ def create_user(db: Session, user: UserCreate, hashed_password: str):
     db.commit()
     db.refresh(db_user)
 
-    if user.rol_id == ROL_ESTUDIANTE:
+    if user.rol_id == ROL_ESTUDIANTE and user.perfil_estudiante:
         perfil = PerfilEstudiante(
-            usuario_id=db_user.id, 
-            nombre_completo="", 
-            institucion_educativa="", 
-            nivel_academico=""
+            usuario_id=db_user.id,
+            **user.perfil_estudiante.model_dump()
         )
         db.add(perfil)
-    elif user.rol_id == ROL_EMPRESA:
+    elif user.rol_id == ROL_EMPRESA and user.perfil_empresa:
         perfil = PerfilEmpresa(
-            usuario_id=db_user.id, 
-            nombre_comercial=""
+            usuario_id=db_user.id,
+            **user.perfil_empresa.model_dump()
         )
         db.add(perfil)
 

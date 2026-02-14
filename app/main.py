@@ -26,11 +26,3 @@ init_db()
 
 # 3. Inclusión de Routers (La lógica de subida ya vive dentro de api_router)
 app.include_router(api_router, prefix="/api/v1")
-
-@app.get("/")
-def root():
-    return {
-        "message": f"Welcome to {settings.PROJECT_NAME}",
-        "status": "active",
-        "author": "Camcapxi",
-    }
