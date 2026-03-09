@@ -1,13 +1,12 @@
-from fastapi import FastAPI
 import logging
 import time
-from sqladmin import Admin
+
+from fastapi import FastAPI
 from sqlalchemy import text
 
-from app.admin.views import UserAdmin
-from app.api.v1.api import api_router # Aquí es donde incluiremos el router de media
+from app.api.v1.api import api_router
 from app.core.config import settings
-from app.db.session import SessionLocal, engine, init_db
+from app.db.session import SessionLocal, init_db
 from app.services.storage_service import StorageService
 
 logger = logging.getLogger(__name__)

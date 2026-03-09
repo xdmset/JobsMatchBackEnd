@@ -1,17 +1,17 @@
-from typing import Optional
 from datetime import date
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 from sqlalchemy import func
+from sqlalchemy.orm import Session
 
+from app.crud import crud_postulacion, crud_swipe
 from app.db.session import get_db
-from app.schemas.interaccion_swipe import SwipeCreate, SwipeEmpresaCreate
-from app.schemas.match import MatchResponse
 from app.models.interaccion_swipe import InteraccionSwipe
 from app.models.interaccion_swipe_empresa import InteraccionSwipeEmpresa
 from app.models.user import User
-from app.crud import crud_swipe, crud_postulacion
+from app.schemas.interaccion_swipe import SwipeCreate, SwipeEmpresaCreate
+from app.schemas.match import MatchResponse
 
 router = APIRouter()
 
@@ -52,7 +52,7 @@ def registrar_swipe(estudiante_id: int, swipe: SwipeCreate, db: Session = Depend
             InteraccionSwipeEmpresa.empresa_id == vacante.empresa_id,
             InteraccionSwipeEmpresa.estudiante_id == estudiante_id,
             InteraccionSwipeEmpresa.vacante_id == vacante.id,
-            InteraccionSwipeEmpresa.interes_empresa == True
+            InteraccionSwipeEmpresa.interes_empresa.is_(True),
         ).first()
         if interes_empresa:
             match_existente = crud_swipe.get_match(db, estudiante_id, vacante.id)
@@ -95,7 +95,7 @@ def registrar_swipe_empresa(empresa_id: int, swipe: SwipeEmpresaCreate, db: Sess
         interes_estudiante = db.query(InteraccionSwipe).filter(
             InteraccionSwipe.estudiante_id == swipe.estudiante_id,
             InteraccionSwipe.vacante_id == swipe.vacante_id,
-            InteraccionSwipe.interes_estudiante == True
+            InteraccionSwipe.interes_estudiante.is_(True),
         ).first()
         if interes_estudiante:
             match_existente = crud_swipe.get_match(db, swipe.estudiante_id, swipe.vacante_id)
