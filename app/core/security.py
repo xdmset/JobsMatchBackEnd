@@ -13,6 +13,8 @@ ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 REFRESH_TOKEN_SECRET = settings.REFRESH_TOKEN_SECRET
 REFRESH_TOKEN_EXPIRE_DAYS = settings.REFRESH_TOKEN_EXPIRE_DAYS
 TOKEN_AUDIENCE = ["fastapi-users:auth"]
+ACCESS_TOKEN_KIND = "access"  # nosec B105
+REFRESH_TOKEN_KIND = "refresh"  # nosec B105
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
@@ -48,7 +50,7 @@ def create_access_token(
     return _create_token(
         subject=subject,
         role=role,
-        token_type="access",
+        token_type=ACCESS_TOKEN_KIND,
         secret=SECRET_KEY,
         lifetime_seconds=lifetime_seconds,
     )
@@ -65,7 +67,7 @@ def create_refresh_token(
     return _create_token(
         subject=subject,
         role=role,
-        token_type="refresh",
+        token_type=REFRESH_TOKEN_KIND,
         secret=REFRESH_TOKEN_SECRET,
         lifetime_seconds=lifetime_seconds,
     )
@@ -78,6 +80,6 @@ def decode_refresh_token(token: str) -> dict[str, Any]:
         TOKEN_AUDIENCE,
         algorithms=[ALGORITHM],
     )
-    if payload.get("token_type") != "refresh":
+    if payload.get("token_type") != REFRESH_TOKEN_KIND:
         raise ValueError("Invalid refresh token")
     return payload

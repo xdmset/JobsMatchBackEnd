@@ -11,6 +11,7 @@ from app.models.user import User
 from app.schemas.auth import RefreshTokenRequest, Token
 
 router = APIRouter()
+TOKEN_TYPE_BEARER = "bearer"  # nosec B105
 
 LOGIN_OPENAPI_EXTRA = {
     "requestBody": {
@@ -104,7 +105,7 @@ def _build_token_response(user: User) -> Token:
     return Token(
         access_token=create_access_token(user.id, role),
         refresh_token=create_refresh_token(user.id, role),
-        token_type="bearer",
+        token_type=TOKEN_TYPE_BEARER,
         access_token_expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         refresh_token_expires_in=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
     )
