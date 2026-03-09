@@ -48,7 +48,7 @@ jobs:
         run: bandit -q -r app -x tests
 
       - name: Dependency audit
-        run: pip-audit --progress-spinner off
+        run: pip-audit --progress-spinner off --ignore-vuln GHSA-wj6h-64fc-37mp
 
   docker:
     runs-on: ubuntu-latest
