@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.db.session import get_db
-from app.crud.crud_user import get_user, get_user_by_email, get_users, create_user, delete_user
-from app.schemas.user import User, UserCreate
+
 from app.core.security import get_password_hash
+from app.crud.crud_user import create_user, delete_user, get_user_by_email, get_users
+from app.db.session import get_db
+from app.schemas.user import User, UserCreate
 from app.services.user_registration import validate_role_profile_payload
 
-router = APIRouter() # ESTA LÍNEA ES LA QUE GENERABA EL NAMEERROR
+router = APIRouter()
 
 @router.get("/", response_model=list[User])
 def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
