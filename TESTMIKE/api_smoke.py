@@ -67,6 +67,12 @@ def _check_list_vacantes(base_url: str) -> None:
     _print_result("list_vacantes", "GET", url, status, elapsed)
 
 
+def _check_list_suscripciones(base_url: str) -> None:
+    url = f"{base_url}/api/v1/suscripciones/"
+    status, elapsed, _ = _request("GET", url)
+    _print_result("list_suscripciones", "GET", url, status, elapsed)
+
+
 def _check_get_by_id(base_url: str, name: str, path: str, item_id: int | None) -> None:
     if item_id is None:
         return
@@ -98,6 +104,7 @@ def main() -> int:
 
     _check_list_users(base_url)
     _check_list_vacantes(base_url)
+    _check_list_suscripciones(base_url)
     _check_get_by_id(base_url, "perfil_estudiante", "/api/v1/perfil_estudiante", args.estudiante_id)
     _check_get_by_id(base_url, "perfil_empresa", "/api/v1/perfil_empresa", args.empresa_id)
 
@@ -110,6 +117,10 @@ def main() -> int:
                 "/api/v1/perfil_empresa/{user_id}",
                 "/api/v1/vacante/{empresa_id}",
                 "/api/v1/postulaciones/empresa/{empresa_id}",
+                "/api/v1/retroalimentacion/postulacion/{postulacion_id}",
+                "/api/v1/suscripciones/",
+                "/api/v1/suscripciones/usuario/{usuario_id}",
+                "/api/v1/suscripciones/{suscripcion_id}",
                 "/api/v1/swipes/empresa/{empresa_id}",
             ],
         )
@@ -232,6 +243,23 @@ def _run_write_flow(base_url: str, cleanup: bool = False) -> None:
         u_status, u_elapsed, _, _ = _put_json(update_empresa_url, update_empresa_payload)
         _print_result("update_empresa", "PUT", update_empresa_url, u_status, u_elapsed)
 
+    suscripcion_id: Optional[int] = None
+    if student_id is not None:
+        list_suscripcion_usuario_url = f"{base_url}/api/v1/suscripciones/usuario/{student_id}"
+        l_status, l_elapsed, l_data, _ = _get_json(list_suscripcion_usuario_url)
+        _print_result("list_suscripcion_u", "GET", list_suscripcion_usuario_url, l_status, l_elapsed)
+        if isinstance(l_data, list) and l_data and isinstance(l_data[0], dict):
+            suscripcion_id = l_data[0].get("id")
+
+    if suscripcion_id is not None:
+        update_suscripcion_url = f"{base_url}/api/v1/suscripciones/{suscripcion_id}"
+        update_suscripcion_payload = {
+            "tipo_plan": "premium",
+            "fecha_fin": "2026-05-08",
+        }
+        u_status, u_elapsed, _, _ = _put_json(update_suscripcion_url, update_suscripcion_payload)
+        _print_result("update_suscripcion", "PUT", update_suscripcion_url, u_status, u_elapsed)
+
     vacante_id_primary: Optional[int] = None
     vacante_id_secondary: Optional[int] = None
 
@@ -269,6 +297,11 @@ def _run_write_flow(base_url: str, cleanup: bool = False) -> None:
         vacante_get_url = f"{base_url}/api/v1/vacante/{vacante_id_primary}"
         g_status, g_elapsed, _, _ = _get_json(vacante_get_url)
         _print_result("get_vacante1", "GET", vacante_get_url, g_status, g_elapsed)
+
+        vacante_update_estado_url = f"{base_url}/api/v1/vacante/{vacante_id_primary}"
+        vacante_update_estado_payload = {"estado": "pausada"}
+        g_status, g_elapsed, _, _ = _put_json(vacante_update_estado_url, vacante_update_estado_payload)
+        _print_result("vacante_estado", "PUT", vacante_update_estado_url, g_status, g_elapsed)
 
     if student_id is not None and vacante_id_primary is not None:
         swipe_url = f"{base_url}/api/v1/swipes/{student_id}"
@@ -309,6 +342,10 @@ def _run_write_flow(base_url: str, cleanup: bool = False) -> None:
         u_status, u_elapsed, _, _ = _put_json(update_post_url, update_post_payload)
         _print_result("postulacion_estado", "PUT", update_post_url, u_status, u_elapsed)
 
+        retro_url = f"{base_url}/api/v1/retroalimentacion/postulacion/{postulacion_id}"
+        r_status, r_elapsed, _, _ = _get_json(retro_url)
+        _print_result("get_retro", "GET", retro_url, r_status, r_elapsed)
+
     if student_id is not None and vacante_id_secondary is not None:
         web_post_url = f"{base_url}/api/v1/postulaciones/web"
         web_post_payload = {"estudiante_id": student_id, "vacante_id": vacante_id_secondary}
@@ -316,6 +353,11 @@ def _run_write_flow(base_url: str, cleanup: bool = False) -> None:
         _print_result("postulacion_web", "POST", web_post_url, p_status, p_elapsed)
 
     if cleanup and student_id is not None:
+        if suscripcion_id is not None:
+            delete_suscripcion_url = f"{base_url}/api/v1/suscripciones/{suscripcion_id}"
+            d_status, d_elapsed, _ = _delete(delete_suscripcion_url)
+            _print_result("delete_suscripcion", "DELETE", delete_suscripcion_url, d_status, d_elapsed)
+
         delete_student_url = f"{base_url}/api/v1/user/{student_id}"
         d_status, d_elapsed, _ = _delete(delete_student_url)
         _print_result("delete_student", "DELETE", delete_student_url, d_status, d_elapsed)

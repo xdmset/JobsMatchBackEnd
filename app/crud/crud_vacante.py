@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from app.models.vacante import Vacante
-from app.schemas.vacante import VacanteCreate
+from app.schemas.vacante import VacanteCreate, VacanteUpdate
 
 def get_vacante(db: Session, vacante_id: int):
     return db.query(Vacante).filter(Vacante.id == vacante_id).first()
@@ -33,7 +33,7 @@ def create_vacante(db: Session, vacante: VacanteCreate, empresa_id: int):
     db.refresh(db_vacante)
     return db_vacante
 
-def update_vacante(db: Session, vacante_id: int, vacante_data: VacanteCreate):
+def update_vacante(db: Session, vacante_id: int, vacante_data: VacanteUpdate):
     db_vacante = get_vacante(db, vacante_id)
     if db_vacante:
         for field, value in vacante_data.model_dump(exclude_unset=True).items():

@@ -6,7 +6,6 @@ from app.schemas.perfil_empresa import PerfilEmpresaCreate
 
 class UserBase(BaseModel):
     email: EmailStr
-    es_premium: bool = False
 
 class UserCreate(UserBase):
     password: str
@@ -17,6 +16,7 @@ class UserCreate(UserBase):
 class User(UserBase):
     id: int
     rol_id: int
+    es_premium: bool
     fecha_registro: datetime
 
     class Config:

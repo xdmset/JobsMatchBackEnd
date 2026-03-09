@@ -6,6 +6,10 @@ from app.models.retroalimentacion import Retroalimentacion
 from app.models.vacante import Vacante
 
 
+def get_postulacion(db: Session, postulacion_id: int) -> Optional[Postulacion]:
+    return db.query(Postulacion).filter(Postulacion.id == postulacion_id).first()
+
+
 def get_vacante(db: Session, vacante_id: int) -> Optional[Vacante]:
     return db.query(Vacante).filter(Vacante.id == vacante_id).first()
 
@@ -63,7 +67,7 @@ def actualizar_estado_postulacion(
     nuevo_estado: str,
     feedback: Optional[dict] = None,
 ) -> Optional[Postulacion]:
-    postulacion = db.query(Postulacion).filter(Postulacion.id == postulacion_id).first()
+    postulacion = get_postulacion(db, postulacion_id)
     if not postulacion:
         return None
 

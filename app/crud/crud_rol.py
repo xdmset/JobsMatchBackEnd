@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
+
+from app.core.enums import NombreRol
 from app.models.rol import Role as RoleModel
-from app.schemas.role import Role
 
 # Obtener todos los roles
 def get_roles(db: Session, skip: int = 0, limit: int = 100):
@@ -11,7 +12,7 @@ def get_rol(db: Session, rol_id: int):
     return db.query(RoleModel).filter(RoleModel.id == rol_id).first()
 
 # Crear un nuevo rol
-def create_rol(db: Session, nombre: str):
+def create_rol(db: Session, nombre: NombreRol):
     db_rol = RoleModel(nombre=nombre)
     db.add(db_rol)
     db.commit()
@@ -19,7 +20,7 @@ def create_rol(db: Session, nombre: str):
     return db_rol
 
 # Actualizar un rol
-def update_rol(db: Session, rol_id: int, nombre: str):
+def update_rol(db: Session, rol_id: int, nombre: NombreRol):
     db_rol = get_rol(db, rol_id)
     if not db_rol:
         return None

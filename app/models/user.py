@@ -22,3 +22,4 @@ class User(Base):
     rol = relationship("Role", back_populates="usuarios")
     perfil_estudiante = relationship("PerfilEstudiante", back_populates="user", uselist=False, cascade="all, delete-orphan")
     perfil_empresa = relationship("PerfilEmpresa", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    suscripciones = relationship("Suscripcion", back_populates="usuario", cascade="all, delete-orphan")

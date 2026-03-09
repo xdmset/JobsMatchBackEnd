@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Optional, List
-from app.schemas.vacante import VacanteCreate, Vacante
+from app.schemas.vacante import VacanteCreate, Vacante, VacanteUpdate
 from app.crud.crud_vacante import (
     get_vacante, 
     get_vacantes, 
@@ -42,7 +42,7 @@ def create_new_vacante(empresa_id: int, vacante: VacanteCreate, db: Session = De
     return create_vacante(db, vacante, empresa_id)
 
 @router.put("/{vacante_id}", response_model=Vacante)
-def update_existing_vacante(vacante_id: int, vacante: VacanteCreate, db: Session = Depends(get_db)):
+def update_existing_vacante(vacante_id: int, vacante: VacanteUpdate, db: Session = Depends(get_db)):
     updated = update_vacante(db, vacante_id, vacante)
     if not updated:
         raise HTTPException(status_code=404, detail="Vacante no encontrada")

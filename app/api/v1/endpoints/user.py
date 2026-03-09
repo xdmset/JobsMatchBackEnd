@@ -21,16 +21,6 @@ def create_new_user(user: UserCreate, db: Session = Depends(get_db)):
     hashed_password = get_password_hash(user.password)
     return create_user(db, user, hashed_password)
 
-@router.put("/{user_id}/premium")
-def upgrade_to_premium(user_id: int, es_premium: bool, db: Session = Depends(get_db)):
-    # Lógica RF-07
-    user = get_user(db, user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    user.es_premium = es_premium
-    db.commit()
-    return {"message": f"Usuario premium: {es_premium}"}
-
 @router.delete("/{user_id}", response_model=User)
 def remove_user(user_id: int, db: Session = Depends(get_db)):
     user = delete_user(db, user_id)

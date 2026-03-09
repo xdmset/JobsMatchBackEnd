@@ -9,6 +9,7 @@ from app.models.retroalimentacion import Retroalimentacion
 from app.models.user import User
 from app.models.vacante import Vacante
 from app.schemas.user import UserCreate
+from app.services.subscription_service import create_default_subscription_for_user
 from app.services.user_registration import create_profile_for_user
 
 def get_user(db: Session, user_id: int):
@@ -29,13 +30,14 @@ def create_user(db: Session, user: UserCreate, hashed_password: str):
         email=user.email,
         password_hash=hashed_password,
         rol_id=user.rol_id,
-        es_premium=user.es_premium
+        es_premium=False,
     )
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
 
     create_profile_for_user(db, db_user, user)
+    create_default_subscription_for_user(db, db_user.id)
     db.commit()
     db.refresh(db_user)
     return db_user

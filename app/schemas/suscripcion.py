@@ -1,0 +1,35 @@
+from datetime import date
+from enum import Enum
+from typing import Optional
+
+from pydantic import BaseModel
+
+
+class TipoPlanSuscripcion(str, Enum):
+    free = "free"
+    premium = "premium"
+
+
+class SuscripcionBase(BaseModel):
+    usuario_id: int
+    tipo_plan: TipoPlanSuscripcion
+    fecha_inicio: Optional[date] = None
+    fecha_fin: Optional[date] = None
+
+
+class SuscripcionCreate(SuscripcionBase):
+    pass
+
+
+class SuscripcionUpdate(BaseModel):
+    usuario_id: Optional[int] = None
+    tipo_plan: Optional[TipoPlanSuscripcion] = None
+    fecha_inicio: Optional[date] = None
+    fecha_fin: Optional[date] = None
+
+
+class Suscripcion(SuscripcionBase):
+    id: int
+
+    class Config:
+        from_attributes = True

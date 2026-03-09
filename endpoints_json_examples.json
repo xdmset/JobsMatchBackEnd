@@ -1,0 +1,403 @@
+{
+  "base_url": "http://localhost:8000",
+  "notes": [
+    "All routes are prefixed with /api/v1.",
+    "Replace path params like {user_id} or {suscripcion_id} with real IDs from your database.",
+    "Endpoints that use query params instead of JSON body are marked with request_type=query_or_form."
+  ],
+  "postman_variables": {
+    "base_url": "http://localhost:8000",
+    "student_id": 1,
+    "company_id": 2,
+    "vacante_id": 1,
+    "postulacion_id": 1,
+    "retroalimentacion_id": 1,
+    "suscripcion_id": 1,
+    "rol_id": 1
+  },
+  "endpoints": [
+    {
+      "name": "Auth Login",
+      "method": "POST",
+      "path": "/api/v1/auth/jwt/login",
+      "request_type": "form-urlencoded",
+      "headers": {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      "body": {
+        "email": "student@example.com",
+        "password": "Test1234!"
+      }
+    },
+    {
+      "name": "Auth Logout",
+      "method": "POST",
+      "path": "/api/v1/auth/jwt/logout",
+      "request_type": "no-body",
+      "headers": {
+        "Authorization": "Bearer <access_token>"
+      }
+    },
+    {
+      "name": "List Roles",
+      "method": "GET",
+      "path": "/api/v1/rol/"
+    },
+    {
+      "name": "Get Role",
+      "method": "GET",
+      "path": "/api/v1/rol/{rol_id}"
+    },
+    {
+      "name": "Create Role",
+      "method": "POST",
+      "path": "/api/v1/rol/",
+      "request_type": "query_or_form",
+      "query_params": {
+        "nombre": "reclutador"
+      }
+    },
+    {
+      "name": "Update Role",
+      "method": "PUT",
+      "path": "/api/v1/rol/{rol_id}",
+      "request_type": "query_or_form",
+      "query_params": {
+        "nombre": "empresa"
+      }
+    },
+    {
+      "name": "Delete Role",
+      "method": "DELETE",
+      "path": "/api/v1/rol/{rol_id}"
+    },
+    {
+      "name": "List Users",
+      "method": "GET",
+      "path": "/api/v1/user/"
+    },
+    {
+      "name": "Create Student User",
+      "method": "POST",
+      "path": "/api/v1/user/",
+      "request_type": "json",
+      "notes": [
+        "El backend crea automaticamente una suscripcion free para el usuario."
+      ],
+      "body": {
+        "email": "student@example.com",
+        "password": "Test1234!",
+        "rol_id": 2,
+        "perfil_estudiante": {
+          "nombre_completo": "Mike Student",
+          "institucion_educativa": "Universidad X",
+          "nivel_academico": "Licenciatura",
+          "biografia": "Estudiante backend junior",
+          "habilidades": [
+            "python",
+            "fastapi",
+            "sql"
+          ],
+          "ubicacion": "Tijuana",
+          "modalidad_preferida": "remoto"
+        }
+      }
+    },
+    {
+      "name": "Create Company User",
+      "method": "POST",
+      "path": "/api/v1/user/",
+      "request_type": "json",
+      "notes": [
+        "El backend crea automaticamente una suscripcion free para el usuario."
+      ],
+      "body": {
+        "email": "company@example.com",
+        "password": "Test1234!",
+        "rol_id": 3,
+        "perfil_empresa": {
+          "nombre_comercial": "Acme Recruiting",
+          "sector": "Tecnologia",
+          "descripcion": "Empresa enfocada en talento junior",
+          "sitio_web": "https://example.com",
+          "ubicacion_sede": "CDMX",
+          "foto_perfil_url": "https://example.com/logo.png"
+        }
+      }
+    },
+    {
+      "name": "Delete User",
+      "method": "DELETE",
+      "path": "/api/v1/user/{user_id}"
+    },
+    {
+      "name": "Get Student Profile",
+      "method": "GET",
+      "path": "/api/v1/perfil_estudiante/{usuario_id}"
+    },
+    {
+      "name": "Create Student Profile",
+      "method": "POST",
+      "path": "/api/v1/perfil_estudiante/{usuario_id}",
+      "request_type": "json",
+      "body": {
+        "nombre_completo": "Mike Student",
+        "institucion_educativa": "Universidad X",
+        "nivel_academico": "Licenciatura",
+        "biografia": "Perfil estudiante",
+        "habilidades": [
+          "python",
+          "fastapi"
+        ],
+        "ubicacion": "Tijuana",
+        "modalidad_preferida": "hibrido"
+      }
+    },
+    {
+      "name": "Update Student Profile",
+      "method": "PUT",
+      "path": "/api/v1/perfil_estudiante/{usuario_id}",
+      "request_type": "json",
+      "body": {
+        "nombre_completo": "Mike Student Updated",
+        "institucion_educativa": "Universidad X",
+        "nivel_academico": "Licenciatura",
+        "biografia": "Perfil actualizado",
+        "habilidades": [
+          "python",
+          "fastapi",
+          "sqlalchemy"
+        ],
+        "ubicacion": "Remote",
+        "modalidad_preferida": "remoto"
+      }
+    },
+    {
+      "name": "Delete Student Profile",
+      "method": "DELETE",
+      "path": "/api/v1/perfil_estudiante/{usuario_id}"
+    },
+    {
+      "name": "Get Company Profile",
+      "method": "GET",
+      "path": "/api/v1/perfil_empresa/{user_id}"
+    },
+    {
+      "name": "Create Company Profile",
+      "method": "POST",
+      "path": "/api/v1/perfil_empresa/{user_id}",
+      "request_type": "json",
+      "body": {
+        "nombre_comercial": "Acme Recruiting",
+        "sector": "Tecnologia",
+        "descripcion": "Perfil empresa",
+        "sitio_web": "https://example.com",
+        "ubicacion_sede": "CDMX",
+        "foto_perfil_url": "https://example.com/logo.png"
+      }
+    },
+    {
+      "name": "Update Company Profile",
+      "method": "PUT",
+      "path": "/api/v1/perfil_empresa/{user_id}",
+      "request_type": "json",
+      "body": {
+        "nombre_comercial": "Acme Recruiting Updated",
+        "sector": "Tecnologia",
+        "descripcion": "Perfil empresa actualizado",
+        "sitio_web": "https://example.com/jobs",
+        "ubicacion_sede": "Remote",
+        "foto_perfil_url": "https://example.com/logo-new.png"
+      }
+    },
+    {
+      "name": "Delete Company Profile",
+      "method": "DELETE",
+      "path": "/api/v1/perfil_empresa/{user_id}"
+    },
+    {
+      "name": "List Vacantes",
+      "method": "GET",
+      "path": "/api/v1/vacante/",
+      "query_params": {
+        "skip": 0,
+        "limit": 100,
+        "modalidad": "remoto",
+        "ubicacion": "CDMX",
+        "sueldo_min": 1000
+      }
+    },
+    {
+      "name": "Get Vacante",
+      "method": "GET",
+      "path": "/api/v1/vacante/{vacante_id}"
+    },
+    {
+      "name": "Create Vacante",
+      "method": "POST",
+      "path": "/api/v1/vacante/{empresa_id}",
+      "request_type": "json",
+      "body": {
+        "titulo": "Backend Intern",
+        "descripcion": "Vacante para backend junior",
+        "requisitos": "Python, FastAPI, SQL",
+        "modalidad": "remoto",
+        "ubicacion": "CDMX",
+        "sueldo_minimo": 1000,
+        "sueldo_maximo": 2000
+      }
+    },
+    {
+      "name": "Update Vacante",
+      "method": "PUT",
+      "path": "/api/v1/vacante/{vacante_id}",
+      "request_type": "json",
+      "body": {
+        "titulo": "Backend Intern Updated",
+        "descripcion": "Vacante actualizada",
+        "requisitos": "Python, FastAPI, SQLAlchemy",
+        "tipo_contrato": "practicas",
+        "modalidad": "hibrido",
+        "ubicacion": "Tijuana",
+        "sueldo_minimo": 1200,
+        "sueldo_maximo": 2500,
+        "moneda": "MXN",
+        "estado": "pausada"
+      }
+    },
+    {
+      "name": "Delete Vacante",
+      "method": "DELETE",
+      "path": "/api/v1/vacante/{vacante_id}"
+    },
+    {
+      "name": "Student Swipe",
+      "method": "POST",
+      "path": "/api/v1/swipes/{estudiante_id}",
+      "request_type": "json",
+      "body": {
+        "vacante_id": 1,
+        "interes_estudiante": true
+      }
+    },
+    {
+      "name": "Company Swipe",
+      "method": "POST",
+      "path": "/api/v1/swipes/empresa/{empresa_id}",
+      "request_type": "json",
+      "body": {
+        "estudiante_id": 1,
+        "vacante_id": 1,
+        "interes_empresa": true
+      }
+    },
+    {
+      "name": "Create Web Postulacion",
+      "method": "POST",
+      "path": "/api/v1/postulaciones/web",
+      "request_type": "json",
+      "body": {
+        "estudiante_id": 1,
+        "vacante_id": 1
+      }
+    },
+    {
+      "name": "List Company Postulaciones",
+      "method": "GET",
+      "path": "/api/v1/postulaciones/empresa/{empresa_id}"
+    },
+    {
+      "name": "Update Postulacion Estado",
+      "method": "PUT",
+      "path": "/api/v1/postulaciones/{postulacion_id}/estado",
+      "request_type": "json",
+      "body": {
+        "nuevo_estado": "rechazado",
+        "feedback": {
+          "campos_mejora": "Mejorar SQL",
+          "sugerencias_perfil": "Agregar proyectos backend"
+        }
+      }
+    },
+    {
+      "name": "Get Retroalimentacion",
+      "method": "GET",
+      "path": "/api/v1/retroalimentacion/{retroalimentacion_id}"
+    },
+    {
+      "name": "Get Retroalimentacion By Postulacion",
+      "method": "GET",
+      "path": "/api/v1/retroalimentacion/postulacion/{postulacion_id}"
+    },
+    {
+      "name": "Create Retroalimentacion",
+      "method": "POST",
+      "path": "/api/v1/retroalimentacion/",
+      "request_type": "json",
+      "body": {
+        "postulacion_id": 1,
+        "campos_mejora": "Mejorar SQL",
+        "sugerencias_perfil": "Agregar proyectos backend"
+      }
+    },
+    {
+      "name": "Update Retroalimentacion",
+      "method": "PUT",
+      "path": "/api/v1/retroalimentacion/{retroalimentacion_id}",
+      "request_type": "json",
+      "body": {
+        "campos_mejora": "Fortalecer testing",
+        "sugerencias_perfil": "Agregar casos de uso con APIs REST"
+      }
+    },
+    {
+      "name": "Delete Retroalimentacion",
+      "method": "DELETE",
+      "path": "/api/v1/retroalimentacion/{retroalimentacion_id}"
+    },
+    {
+      "name": "List Suscripciones",
+      "method": "GET",
+      "path": "/api/v1/suscripciones/"
+    },
+    {
+      "name": "List Suscripciones By Usuario",
+      "method": "GET",
+      "path": "/api/v1/suscripciones/usuario/{usuario_id}"
+    },
+    {
+      "name": "Get Suscripcion",
+      "method": "GET",
+      "path": "/api/v1/suscripciones/{suscripcion_id}"
+    },
+    {
+      "name": "Create Suscripcion",
+      "method": "POST",
+      "path": "/api/v1/suscripciones/",
+      "request_type": "json",
+      "body": {
+        "usuario_id": 1,
+        "tipo_plan": "premium",
+        "fecha_inicio": "2026-03-08",
+        "fecha_fin": "2026-04-08"
+      }
+    },
+    {
+      "name": "Update Suscripcion",
+      "method": "PUT",
+      "path": "/api/v1/suscripciones/{suscripcion_id}",
+      "request_type": "json",
+      "body": {
+        "usuario_id": 1,
+        "tipo_plan": "free",
+        "fecha_inicio": "2026-03-08",
+        "fecha_fin": "2026-05-08"
+      }
+    },
+    {
+      "name": "Delete Suscripcion",
+      "method": "DELETE",
+      "path": "/api/v1/suscripciones/{suscripcion_id}"
+    }
+  ]
+}

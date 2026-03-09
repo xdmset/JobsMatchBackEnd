@@ -76,7 +76,7 @@ def wait_for_server(base_url: str, timeout_seconds: int = 20) -> None:
 def login(base_url: str, email: str, password: str) -> dict:
     response = requests.post(
         f"{base_url}/api/v1/auth/jwt/login",
-        data={"username": email, "password": password},
+        data={"email": email, "password": password},
         headers={"Content-Type": "application/x-www-form-urlencoded"},
         timeout=10,
     )
@@ -113,7 +113,18 @@ def main() -> int:
         assert "/api/v1/user/" in paths
         assert "/api/v1/auth/jwt/login" in paths
         assert "/api/v1/postulaciones/web" in paths
+        assert "/api/v1/retroalimentacion/postulacion/{postulacion_id}" in paths
+        assert "/api/v1/suscripciones/" in paths
+        assert "/api/v1/suscripciones/usuario/{usuario_id}" in paths
+        assert "/api/v1/suscripciones/{suscripcion_id}" in paths
         assert "/api/v1/swipes/empresa/{empresa_id}" in paths
+        login_request_body_schema = paths["/api/v1/auth/jwt/login"]["post"]["requestBody"]["content"][
+            "application/x-www-form-urlencoded"
+        ]["schema"]
+        login_schema_name = login_request_body_schema["$ref"].split("/")[-1]
+        login_request_body = openapi_response.json()["components"]["schemas"][login_schema_name]
+        assert "email" in login_request_body["properties"]
+        assert "username" not in login_request_body["properties"]
 
         student_payload = {
             "email": "student-flow@example.com",
@@ -182,6 +193,46 @@ def main() -> int:
         assert_status(list_users, 200, "list users")
         assert len(list_users.json()) == 2
 
+        list_subscriptions = requests.get(f"{base_url}/api/v1/suscripciones/", timeout=10)
+        assert_status(list_subscriptions, 200, "list suscripciones")
+        assert len(list_subscriptions.json()) == 2
+
+        list_user_subscriptions = requests.get(
+            f"{base_url}/api/v1/suscripciones/usuario/{student_id}",
+            timeout=10,
+        )
+        assert_status(list_user_subscriptions, 200, "list suscripciones by user")
+        assert len(list_user_subscriptions.json()) == 1
+        subscription_payload = list_user_subscriptions.json()[0]
+        subscription_id = subscription_payload["id"]
+        assert subscription_payload["usuario_id"] == student_id
+        assert subscription_payload["tipo_plan"] == "free"
+
+        get_subscription = requests.get(
+            f"{base_url}/api/v1/suscripciones/{subscription_id}",
+            timeout=10,
+        )
+        assert_status(get_subscription, 200, "get suscripcion")
+        assert get_subscription.json()["tipo_plan"] == "free"
+
+        update_subscription = requests.put(
+            f"{base_url}/api/v1/suscripciones/{subscription_id}",
+            json={
+                "tipo_plan": "premium",
+                "fecha_fin": "2026-05-08",
+            },
+            timeout=10,
+        )
+        assert_status(update_subscription, 200, "update suscripcion")
+        updated_subscription = update_subscription.json()
+        assert updated_subscription["tipo_plan"] == "premium"
+        assert updated_subscription["fecha_fin"] == "2026-05-08"
+
+        synced_user = requests.get(f"{base_url}/api/v1/user/", timeout=10)
+        assert_status(synced_user, 200, "list users after suscripcion update")
+        student_user = next(item for item in synced_user.json() if item["id"] == student_id)
+        assert student_user["es_premium"] is True
+
         get_student_profile = requests.get(f"{base_url}/api/v1/perfil_estudiante/{student_id}", timeout=10)
         assert_status(get_student_profile, 200, "get student profile")
         assert get_student_profile.json()["nombre_completo"] == "Student Flow"
@@ -236,6 +287,14 @@ def main() -> int:
         )
         assert_status(create_vacancy_web, 200, "create first vacancy")
         first_vacancy_id = create_vacancy_web.json()["id"]
+
+        update_vacancy_state = requests.put(
+            f"{base_url}/api/v1/vacante/{first_vacancy_id}",
+            json={"estado": "pausada"},
+            timeout=10,
+        )
+        assert_status(update_vacancy_state, 200, "update vacancy estado")
+        assert update_vacancy_state.json()["estado"] == "pausada"
 
         create_vacancy_swipe = requests.post(
             f"{base_url}/api/v1/vacante/{company_id}",
@@ -305,6 +364,15 @@ def main() -> int:
         )
         assert_status(reject_application, 200, "reject application with feedback")
 
+        get_feedback = requests.get(
+            f"{base_url}/api/v1/retroalimentacion/postulacion/{first_application['id']}",
+            timeout=10,
+        )
+        assert_status(get_feedback, 200, "get feedback by postulacion")
+        feedback_payload = get_feedback.json()
+        assert feedback_payload["postulacion_id"] == first_application["id"]
+        assert feedback_payload["campos_mejora"] == "Mejorar SQL"
+
         db = SessionLocal()
         try:
             stored_application = db.query(Postulacion).filter(Postulacion.id == first_application["id"]).first()
@@ -318,6 +386,7 @@ def main() -> int:
             )
             assert stored_feedback is not None
             assert stored_feedback.campos_mejora == "Mejorar SQL"
+            assert stored_feedback.id == feedback_payload["id"]
         finally:
             db.close()
 
@@ -365,6 +434,21 @@ def main() -> int:
         )
         assert swipe_application["source"] == "app_swipe"
         assert swipe_application["match_id"] == match_payload["id"]
+
+        delete_subscription = requests.delete(
+            f"{base_url}/api/v1/suscripciones/{subscription_id}",
+            timeout=10,
+        )
+        assert_status(delete_subscription, 200, "delete suscripcion")
+
+        list_subscriptions_after_delete = requests.get(f"{base_url}/api/v1/suscripciones/", timeout=10)
+        assert_status(list_subscriptions_after_delete, 200, "list suscripciones after delete")
+        assert len(list_subscriptions_after_delete.json()) == 1
+
+        users_after_subscription_delete = requests.get(f"{base_url}/api/v1/user/", timeout=10)
+        assert_status(users_after_subscription_delete, 200, "list users after suscripcion delete")
+        student_after_delete = next(item for item in users_after_subscription_delete.json() if item["id"] == student_id)
+        assert student_after_delete["es_premium"] is False
 
         delete_student = requests.delete(f"{base_url}/api/v1/user/{student_id}", timeout=10)
         assert_status(delete_student, 200, "delete student")

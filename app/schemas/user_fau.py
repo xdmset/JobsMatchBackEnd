@@ -11,11 +11,9 @@ class UserRead(schemas.BaseUser[int]):
 
 class UserCreate(schemas.BaseUserCreate):
     rol_id: int
-    es_premium: bool = False
     perfil_estudiante: PerfilEstudianteCreate | None = None
     perfil_empresa: PerfilEmpresaCreate | None = None
 
 
 class UserUpdate(schemas.BaseUserUpdate):
     rol_id: int | None = None
-    es_premium: bool | None = None
