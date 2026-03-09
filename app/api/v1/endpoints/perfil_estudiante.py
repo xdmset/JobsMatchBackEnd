@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from app.core.dependencies import ensure_same_user, get_current_user
+from app.core.enums import NombreRol
 from app.crud.crud_perfil_estudiante import get_estudiante, create_estudiante, update_estudiante, delete_estudiante
 from app.db.session import get_db
+from app.models.user import User
 from app.schemas.perfil_estudiante import PerfilEstudiante, PerfilEstudianteCreate
 from app.services.profile_media import serialize_estudiante_profile
 
@@ -16,19 +19,36 @@ def read_estudiante(usuario_id: int, db: Session = Depends(get_db)):
     return serialize_estudiante_profile(estudiante)
 
 @router.post("/{usuario_id}", response_model=PerfilEstudiante)
-def create_new_estudiante(usuario_id: int, estudiante: PerfilEstudianteCreate, db: Session = Depends(get_db)):
+def create_new_estudiante(
+    usuario_id: int,
+    estudiante: PerfilEstudianteCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ensure_same_user(current_user, usuario_id, NombreRol.estudiante.value)
     created = create_estudiante(db, estudiante, usuario_id)
     return serialize_estudiante_profile(created)
 
 @router.put("/{usuario_id}", response_model=PerfilEstudiante)
-def update_existing_estudiante(usuario_id: int, estudiante: PerfilEstudianteCreate, db: Session = Depends(get_db)):
+def update_existing_estudiante(
+    usuario_id: int,
+    estudiante: PerfilEstudianteCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ensure_same_user(current_user, usuario_id, NombreRol.estudiante.value)
     updated = update_estudiante(db, usuario_id, estudiante)
     if not updated:
         raise HTTPException(status_code=404, detail="Estudiante no encontrado")
     return serialize_estudiante_profile(updated)
 
 @router.delete("/{usuario_id}", response_model=PerfilEstudiante)
-def delete_existing_estudiante(usuario_id: int, db: Session = Depends(get_db)):
+def delete_existing_estudiante(
+    usuario_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ensure_same_user(current_user, usuario_id, NombreRol.estudiante.value)
     deleted = delete_estudiante(db, usuario_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Estudiante no encontrado")
