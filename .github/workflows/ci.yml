@@ -10,6 +10,19 @@ on:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: sqlite:///:memory:
+      SECRET_KEY: ci-test-secret
+      ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+      MINIO_ENDPOINT: localhost:9000
+      MINIO_PUBLIC_ENDPOINT: localhost:9000
+      MINIO_ACCESS_KEY: admin
+      MINIO_SECRET_KEY: password123
+      MINIO_BUCKET_NAME: uploads
+      USE_SSL: "False"
+      MEDIA_URL_EXPIRATION_SECONDS: "3600"
+      MAX_IMAGE_UPLOAD_BYTES: "5242880"
+      MAX_DOCUMENT_UPLOAD_BYTES: "10485760"
 
     steps:
       - name: Checkout
