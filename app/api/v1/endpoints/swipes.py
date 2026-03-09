@@ -5,6 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.core.dependencies import ensure_same_user, get_current_user
+from app.core.enums import NombreRol
 from app.crud import crud_postulacion, crud_swipe
 from app.db.session import get_db
 from app.models.interaccion_swipe import InteraccionSwipe
@@ -16,7 +18,13 @@ from app.schemas.match import MatchResponse
 router = APIRouter()
 
 @router.post("/{estudiante_id}", response_model=Optional[MatchResponse])
-def registrar_swipe(estudiante_id: int, swipe: SwipeCreate, db: Session = Depends(get_db)):
+def registrar_swipe(
+    estudiante_id: int,
+    swipe: SwipeCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ensure_same_user(current_user, estudiante_id, NombreRol.estudiante.value)
     # 1. Verificar Límite Freemium (RF-07)
     usuario = db.query(User).filter(User.id == estudiante_id).first()
     if not usuario:
@@ -75,7 +83,13 @@ def registrar_swipe(estudiante_id: int, swipe: SwipeCreate, db: Session = Depend
     return match_confirmado
 
 @router.post("/empresa/{empresa_id}", response_model=Optional[MatchResponse])
-def registrar_swipe_empresa(empresa_id: int, swipe: SwipeEmpresaCreate, db: Session = Depends(get_db)):
+def registrar_swipe_empresa(
+    empresa_id: int,
+    swipe: SwipeEmpresaCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ensure_same_user(current_user, empresa_id, NombreRol.empresa.value)
     vacante = crud_swipe.get_vacante(db, swipe.vacante_id)
     if not vacante:
         raise HTTPException(status_code=404, detail="Vacante no encontrada")

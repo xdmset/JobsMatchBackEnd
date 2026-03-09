@@ -7,9 +7,12 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.dependencies import ensure_same_user, get_current_user
+from app.core.enums import NombreRol
 from app.db.session import get_db
 from app.models.perfil_empresa import PerfilEmpresa
 from app.models.perfil_estudiante import PerfilEstudiante
+from app.models.user import User
 from app.schemas.media import MediaAccessResponse, MediaUploadResponse
 from app.services.storage_service import StorageService
 
@@ -76,7 +79,9 @@ def upload_estudiante_foto(
     usuario_id: int,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    ensure_same_user(current_user, usuario_id, NombreRol.estudiante.value)
     estudiante = db.query(PerfilEstudiante).filter(PerfilEstudiante.usuario_id == usuario_id).first()
     if not estudiante:
         raise HTTPException(status_code=404, detail="Estudiante no encontrado")
@@ -106,7 +111,9 @@ def upload_estudiante_cv(
     usuario_id: int,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    ensure_same_user(current_user, usuario_id, NombreRol.estudiante.value)
     estudiante = db.query(PerfilEstudiante).filter(PerfilEstudiante.usuario_id == usuario_id).first()
     if not estudiante:
         raise HTTPException(status_code=404, detail="Estudiante no encontrado")
@@ -149,7 +156,12 @@ def get_estudiante_foto(usuario_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/estudiantes/{usuario_id}/cv", response_model=MediaAccessResponse)
-def get_estudiante_cv(usuario_id: int, db: Session = Depends(get_db)):
+def get_estudiante_cv(
+    usuario_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ensure_same_user(current_user, usuario_id, NombreRol.estudiante.value)
     estudiante = db.query(PerfilEstudiante).filter(PerfilEstudiante.usuario_id == usuario_id).first()
     if not estudiante or not estudiante.cv_storage_key:
         raise HTTPException(status_code=404, detail="CV no encontrado")
@@ -165,7 +177,12 @@ def get_estudiante_cv(usuario_id: int, db: Session = Depends(get_db)):
 
 
 @router.delete("/estudiantes/{usuario_id}/foto")
-def delete_estudiante_foto(usuario_id: int, db: Session = Depends(get_db)):
+def delete_estudiante_foto(
+    usuario_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ensure_same_user(current_user, usuario_id, NombreRol.estudiante.value)
     estudiante = db.query(PerfilEstudiante).filter(PerfilEstudiante.usuario_id == usuario_id).first()
     if not estudiante or not estudiante.foto_perfil_storage_key:
         raise HTTPException(status_code=404, detail="Foto de perfil no encontrada")
@@ -177,7 +194,12 @@ def delete_estudiante_foto(usuario_id: int, db: Session = Depends(get_db)):
 
 
 @router.delete("/estudiantes/{usuario_id}/cv")
-def delete_estudiante_cv(usuario_id: int, db: Session = Depends(get_db)):
+def delete_estudiante_cv(
+    usuario_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ensure_same_user(current_user, usuario_id, NombreRol.estudiante.value)
     estudiante = db.query(PerfilEstudiante).filter(PerfilEstudiante.usuario_id == usuario_id).first()
     if not estudiante or not estudiante.cv_storage_key:
         raise HTTPException(status_code=404, detail="CV no encontrado")
@@ -194,7 +216,9 @@ def upload_empresa_foto(
     usuario_id: int,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    ensure_same_user(current_user, usuario_id, NombreRol.empresa.value)
     empresa = db.query(PerfilEmpresa).filter(PerfilEmpresa.usuario_id == usuario_id).first()
     if not empresa:
         raise HTTPException(status_code=404, detail="Empresa no encontrada")
@@ -236,7 +260,12 @@ def get_empresa_foto(usuario_id: int, db: Session = Depends(get_db)):
 
 
 @router.delete("/empresas/{usuario_id}/foto")
-def delete_empresa_foto(usuario_id: int, db: Session = Depends(get_db)):
+def delete_empresa_foto(
+    usuario_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ensure_same_user(current_user, usuario_id, NombreRol.empresa.value)
     empresa = db.query(PerfilEmpresa).filter(PerfilEmpresa.usuario_id == usuario_id).first()
     if not empresa or not empresa.foto_perfil_storage_key:
         raise HTTPException(status_code=404, detail="Foto de empresa no encontrada")

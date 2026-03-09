@@ -66,3 +66,104 @@ Pipeline de GitHub Actions:
 - build de imagen Docker
 
 El workflow vive en `.github/workflows/ci.yml`.
+
+## Autenticacion y autorizacion
+
+La API usa JWT Bearer con dos tokens:
+
+- `access_token`: vida corta para acceder a endpoints protegidos.
+- `refresh_token`: vida mas larga para renovar sesion sin volver a pedir credenciales.
+
+Variables de entorno relevantes:
+
+```env
+SECRET_KEY=super-secret
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+REFRESH_TOKEN_SECRET=super-secret-refresh
+REFRESH_TOKEN_EXPIRE_DAYS=7
+```
+
+Flujo de autenticacion:
+
+```text
+POST /api/v1/auth/jwt/login
+POST /api/v1/auth/jwt/refresh
+POST /api/v1/auth/jwt/logout
+```
+
+Ejemplo de login:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/jwt/login \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "email=estudiante@test.com&password=tu_password"
+```
+
+Respuesta esperada:
+
+```json
+{
+  "access_token": "jwt-access",
+  "refresh_token": "jwt-refresh",
+  "token_type": "bearer",
+  "access_token_expires_in": 1800,
+  "refresh_token_expires_in": 604800
+}
+```
+
+Ejemplo de refresh:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/jwt/refresh \
+  -H "Content-Type: application/json" \
+  -d '{"refresh_token":"jwt-refresh"}'
+```
+
+Reglas de acceso:
+
+- Publico: `POST /auth/jwt/login`, `POST /auth/jwt/refresh`, `POST /user`, `GET /vacante`, `GET /vacante/{id}`, `GET` de perfiles publicos y fotos publicas.
+- Admin: gestion de roles, listado global de usuarios y administracion global de suscripciones.
+- Estudiante: solo puede modificar su propio perfil, CV, foto, swipes y postulaciones web.
+- Empresa: solo puede modificar su propio perfil, foto, vacantes, swipes de empresa, postulaciones y retroalimentacion asociada a sus vacantes.
+- Admin o duenio del recurso: eliminacion de usuario propio y lectura de recursos privados segun corresponda.
+
+Notas:
+
+- `GET /api/v1/media/estudiantes/{usuario_id}/cv` requiere autenticacion del propio estudiante o admin.
+- `POST /api/v1/auth/jwt/logout` es stateless: el cliente debe descartar ambos tokens.
+
+## Matriz de acceso por rol
+
+| Endpoint / Recurso | Publico | Estudiante | Empresa | Admin |
+| --- | --- | --- | --- | --- |
+| `POST /api/v1/auth/jwt/login` | Si | Si | Si | Si |
+| `POST /api/v1/auth/jwt/refresh` | Si | Si | Si | Si |
+| `POST /api/v1/auth/jwt/logout` | No | Si | Si | Si |
+| `POST /api/v1/user/` | Si | Si | Si | Si |
+| `GET /api/v1/user/` | No | No | No | Si |
+| `DELETE /api/v1/user/{user_id}` | No | Solo propio usuario | Solo propio usuario | Si |
+| `GET /api/v1/rol/` y `GET /api/v1/rol/{rol_id}` | No | No | No | Si |
+| `POST/PUT/DELETE /api/v1/rol/*` | No | No | No | Si |
+| `GET /api/v1/vacante/` y `GET /api/v1/vacante/{vacante_id}` | Si | Si | Si | Si |
+| `POST /api/v1/vacante/{empresa_id}` | No | No | Solo propia empresa | Si |
+| `PUT/DELETE /api/v1/vacante/{vacante_id}` | No | No | Solo vacantes propias | Si |
+| `GET /api/v1/perfil_estudiante/{usuario_id}` | Si | Si | Si | Si |
+| `POST/PUT/DELETE /api/v1/perfil_estudiante/{usuario_id}` | No | Solo propio perfil | No | Si |
+| `GET /api/v1/perfil_empresa/{user_id}` | Si | Si | Si | Si |
+| `POST/PUT/DELETE /api/v1/perfil_empresa/{user_id}` | No | No | Solo propio perfil | Si |
+| `GET /api/v1/media/estudiantes/{usuario_id}/foto` | Si | Si | Si | Si |
+| `POST/DELETE /api/v1/media/estudiantes/{usuario_id}/foto` | No | Solo propio recurso | No | Si |
+| `POST/GET/DELETE /api/v1/media/estudiantes/{usuario_id}/cv` | No | Solo propio recurso | No | Si |
+| `GET /api/v1/media/empresas/{usuario_id}/foto` | Si | Si | Si | Si |
+| `POST/DELETE /api/v1/media/empresas/{usuario_id}/foto` | No | No | Solo propio recurso | Si |
+| `POST /api/v1/swipes/{estudiante_id}` | No | Solo su propio `estudiante_id` | No | Si |
+| `POST /api/v1/swipes/empresa/{empresa_id}` | No | No | Solo su propio `empresa_id` | Si |
+| `POST /api/v1/postulaciones/web` | No | Solo su propia postulacion | No | Si |
+| `GET /api/v1/postulaciones/empresa/{empresa_id}` | No | No | Solo su propia empresa | Si |
+| `PUT /api/v1/postulaciones/{postulacion_id}/estado` | No | No | Solo postulaciones de su empresa | Si |
+| `GET /api/v1/retroalimentacion/{retroalimentacion_id}` | No | Solo si pertenece a su postulacion | Solo si pertenece a su empresa | Si |
+| `GET /api/v1/retroalimentacion/postulacion/{postulacion_id}` | No | Solo si pertenece a su postulacion | Solo si pertenece a su empresa | Si |
+| `POST/PUT/DELETE /api/v1/retroalimentacion/*` | No | No | Solo sobre postulaciones de su empresa | Si |
+| `GET /api/v1/suscripciones/usuario/{usuario_id}` | No | Solo propias | Solo propias | Si |
+| `GET /api/v1/suscripciones/` y `GET /api/v1/suscripciones/{suscripcion_id}` | No | No | No | Si |
+| `POST/PUT/DELETE /api/v1/suscripciones/*` | No | No | No | Si |

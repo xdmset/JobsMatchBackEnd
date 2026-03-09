@@ -2,12 +2,12 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-
     PROJECT_NAME: str = "JOBMATCH"
     DATABASE_URL: str
     SECRET_KEY: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-
+    REFRESH_TOKEN_SECRET: str | None = None
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # Configuraciones de MinIO
     minio_endpoint: str = "localhost:9000"
@@ -25,3 +25,5 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+if settings.REFRESH_TOKEN_SECRET is None:
+    settings.REFRESH_TOKEN_SECRET = settings.SECRET_KEY
