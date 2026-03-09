@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   api:
     build: .
@@ -6,3 +5,49 @@ services:
       - "8000:8000"
     env_file:
       - .env
+    environment:
+      DATABASE_URL: ${DOCKER_DATABASE_URL:-mysql+pymysql://mysql:123Tamarindo@mysql:3306/jobmatch_db}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_PUBLIC_ENDPOINT: localhost:9000
+    depends_on:
+      mysql:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
+  mysql:
+    image: mysql:8.0
+    container_name: jobmatch-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: jobmatch_db
+      MYSQL_USER: mysql
+      MYSQL_PASSWORD: 123Tamarindo
+      MYSQL_ROOT_PASSWORD: root123
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-proot123"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  minio:
+    image: minio/minio:latest
+    container_name: jobmatch-minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: password123
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
+volumes:
+  mysql_data:
+  minio_data:

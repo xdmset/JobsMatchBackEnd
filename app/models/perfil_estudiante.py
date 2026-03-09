@@ -12,8 +12,10 @@ class PerfilEstudiante(Base):
     biografia = Column(Text)
     habilidades = Column(JSON) # RF-02
     cv_url = Column(String(255))
+    cv_storage_key = Column(String(512))
     cv_tipo_archivo = Column(String(255))
     foto_perfil_url = Column(String(255))
+    foto_perfil_storage_key = Column(String(512))
     ubicacion = Column(String(255))
     modalidad_preferida = Column(Enum('remoto', 'presencial', 'hibrido', name='modalidad_estudiante'))
 

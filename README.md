@@ -39,3 +39,30 @@ mysql -u root -p jobsmatch < respaldo_jobsmatch.sql
 Para iniciar el servicio de desarrollo:
 
 uvicorn app.main:app --reload
+
+## Calidad, CI/CD y seguridad
+
+Instala herramientas de desarrollo:
+
+```bash
+pip install -r requirements.txt -r requirements-dev.txt
+```
+
+Comandos locales recomendados:
+
+```bash
+ruff check app tests
+pytest --cov=app --cov-report=term-missing
+bandit -q -r app -x tests
+pip-audit --progress-spinner off
+```
+
+Pipeline de GitHub Actions:
+
+- lint con `ruff`
+- pruebas con `pytest` y cobertura
+- escaneo SAST con `bandit`
+- auditoria de dependencias con `pip-audit`
+- build de imagen Docker
+
+El workflow vive en `.github/workflows/ci.yml`.

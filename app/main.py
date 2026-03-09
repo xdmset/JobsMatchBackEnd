@@ -1,24 +1,39 @@
 from fastapi import FastAPI
+import logging
+import time
 from sqladmin import Admin
+from sqlalchemy import text
 
 from app.admin.views import UserAdmin
 from app.api.v1.api import api_router # Aquí es donde incluiremos el router de media
 from app.core.config import settings
-from app.db.session import engine, init_db
-# from app.services.storage_service import StorageService # Importamos tu nuevo servicio
+from app.db.session import SessionLocal, engine, init_db
+from app.services.storage_service import StorageService
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title=settings.PROJECT_NAME)
 
-init_db()
+@app.on_event("startup")
+def startup_event():
+    for attempt in range(1, 16):
+        try:
+            db = SessionLocal()
+            db.execute(text("SELECT 1"))
+            db.close()
+            init_db()
+            break
+        except Exception as exc:
+            logger.warning("Base de datos no disponible en startup (intento %s/15): %s", attempt, exc)
+            time.sleep(2)
+    else:
+        raise RuntimeError("No fue posible conectar a MySQL durante el arranque")
 
-# # 1. Evento de inicio para asegurar infraestructura
-# @app.on_event("startup")
-# async def startup_event():
-#     # Inicializa la DB
-#     init_db()
-#     # Asegura que el bucket de MinIO existe antes de recibir peticiones
-#     storage = StorageService()
-#     await storage.ensure_bucket_exists()
+    try:
+        storage = StorageService()
+        storage.ensure_bucket_exists()
+    except Exception as exc:
+        logger.warning("MinIO no disponible en startup: %s", exc)
 
 # # 2. Configuración de SQLAdmin
 # admin = Admin(app, engine)

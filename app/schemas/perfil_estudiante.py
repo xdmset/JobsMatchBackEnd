@@ -15,6 +15,9 @@ class PerfilEstudianteCreate(PerfilEstudianteBase):
 
 class PerfilEstudiante(PerfilEstudianteBase):
     usuario_id: int  # Modificado: de user_id a usuario_id
+    cv_url: Optional[str] = None
+    cv_tipo_archivo: Optional[str] = None
+    foto_perfil_url: Optional[str] = None
 
     class Config:
         from_attributes = True
