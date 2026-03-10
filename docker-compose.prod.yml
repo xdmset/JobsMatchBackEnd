@@ -1,0 +1,59 @@
+services:
+  api:
+    image: ${API_IMAGE}
+    container_name: jobmatch-api
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    depends_on:
+      mysql:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    ports:
+      - "${API_PORT:-8000}:8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5).read()",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  mysql:
+    image: mysql:8.0
+    container_name: ${MYSQL_CONTAINER_NAME:-jobmatch-mysql}
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  minio:
+    image: minio/minio:latest
+    container_name: ${MINIO_CONTAINER_NAME:-jobmatch-minio}
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
+volumes:
+  mysql_data:
+  minio_data:

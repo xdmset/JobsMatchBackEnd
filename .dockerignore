@@ -1,0 +1,12 @@
+.git
+.github
+.pytest_cache
+.ruff_cache
+.coverage
+__pycache__
+*.pyc
+venv
+tests
+respaldo_jobsmatch_2026-02-10.sql
+endpoints_json_examples.json
+
