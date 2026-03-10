@@ -186,6 +186,18 @@ Archivos agregados para produccion:
 - `deploy/wait_for_health.sh`
 - `.github/workflows/cd.yml`
 
+### Certbot y HTTPS
+
+1. Configura Nginx con el proxy hacia `http://127.0.0.1:8000`.
+2. Instala `certbot` y su plugin (`sudo apt install certbot python3-certbot-nginx`).
+3. Corre:
+
+```bash
+sudo certbot --nginx -d api.jobmatch.com.mx -d files.jobmatch.com.mx
+```
+
+4. Verifica que el cron generado renueve (`sudo certbot renew --dry-run`) y comprueba `/etc/letsencrypt/renewal/`.
+
 ### Bootstrap inicial en el VPS
 
 1. Instala Docker Engine y Docker Compose plugin.
@@ -267,3 +279,11 @@ Backup MySQL:
 ```bash
 ./deploy/backup_mysql.sh
 ```
+
+### Pasar de develop a main
+
+1. Asegura que staging (`develop`) ya está estable: tests + deploy + health check bajo HTTPS.
+2. Verifica que los secrets `_PROD` existan y que el dominio apunta al VPS con certificados válidos.
+3. Merge o push directo a `main`; el workflow usará los secrets `PROD` y la imagen GHCR correspondiente.
+4. Confirma que el job termina exitoso, que `docker ps` en el VPS refleja la nueva imagen y que `https://api.jobmatch.com.mx/health` responde `ok`.
+5. Si necesitas retroceder rápida, usa `./deploy/rollback.sh` en el VPS antes de volver a lanzar el push en `main`.
