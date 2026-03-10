@@ -86,6 +86,8 @@ jobs:
       VPS_USER: ${{ needs.context.outputs.deploy_env == 'production' && secrets.VPS_USER_PROD || secrets.VPS_USER_STAGING }}
       VPS_SSH_KEY: ${{ needs.context.outputs.deploy_env == 'production' && secrets.VPS_SSH_KEY_PROD || secrets.VPS_SSH_KEY_STAGING }}
       APP_DIR: ${{ needs.context.outputs.deploy_env == 'production' && secrets.APP_DIR_PROD || secrets.APP_DIR_STAGING }}
+      GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+      GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -122,5 +124,5 @@ jobs:
           tar xzf /tmp/jobmatch-deploy.tgz -C "${APP_DIR}"
           chmod +x "${APP_DIR}/deploy/"*.sh
           cd "${APP_DIR}"
-          API_IMAGE="${{ needs.context.outputs.image_ref }}" ./deploy/deploy.sh
+          GHCR_USERNAME="${GHCR_USERNAME}" GHCR_TOKEN="${GHCR_TOKEN}" API_IMAGE="${{ needs.context.outputs.image_ref }}" ./deploy/deploy.sh
           EOF

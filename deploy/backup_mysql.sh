@@ -10,8 +10,7 @@ BACKUP_FILE="$BACKUP_DIR/mysql_${TIMESTAMP}.sql"
 mkdir -p "$BACKUP_DIR"
 
 docker exec "$MYSQL_CONTAINER_NAME" sh -c \
-  'exec mysqldump --single-transaction --quick -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' \
+  'exec mysqldump --single-transaction --quick --no-tablespaces -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' \
   > "$BACKUP_FILE"
 
 echo "MySQL backup created at $BACKUP_FILE"
-

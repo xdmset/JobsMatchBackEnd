@@ -26,6 +26,10 @@ fi
 
 export API_IMAGE
 
+if [[ -n "${GHCR_USERNAME:-}" && -n "${GHCR_TOKEN:-}" ]]; then
+  echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+fi
+
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d mysql minio
 SERVICE_NAME=mysql "$APP_DIR/deploy/wait_for_health.sh"
 "$APP_DIR/deploy/backup_mysql.sh"
