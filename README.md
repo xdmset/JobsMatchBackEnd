@@ -280,6 +280,20 @@ Backup MySQL:
 ./deploy/backup_mysql.sh
 ```
 
+### Usuario admin del respaldo
+
+El archivo `respaldo_jobsmatch_2026-02-10.sql` crea un admin con:
+
+- Email: `admin@test.com`
+- Password (antes del hash): `AdminJobmatch2026!`
+
+Si necesitas cambiar la contraseña, puedes:
+
+1. Iniciar sesión (si la API está arriba) y usar la API de usuarios para actualizarla.
+2. Ejecutar manualmente un `UPDATE usuarios SET password_hash = '<nuevo-hash>' WHERE email = 'admin@test.com';` (usa `app.core.security.get_password_hash` desde una shell Python para generar el hash).
+
+Siempre rota la clave después de publicar el backup en un entorno público.
+
 ### Pasar de develop a main
 
 1. Asegura que staging (`develop`) ya está estable: tests + deploy + health check bajo HTTPS.

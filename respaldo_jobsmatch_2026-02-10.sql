@@ -65,7 +65,7 @@ LOCK TABLES `usuarios` WRITE;
 INSERT INTO `usuarios` VALUES
 (1,2,'estudiante@test.com','$argon2id$v=19$m=65536,t=3,p=4$demo_student_hash',1,0,1,0,'2026-02-09 19:05:06'),
 (2,3,'empresa@test.com','$argon2id$v=19$m=65536,t=3,p=4$demo_company_hash',1,0,1,1,'2026-02-09 19:06:34'),
-(3,1,'admin@test.com','$argon2id$v=19$m=65536,t=3,p=4$demo_admin_hash',1,1,1,1,'2026-02-10 13:28:00');
+(3,1,'admin@test.com','$argon2id$v=19$m=65536,t=3,p=4$RyhFyPm/lzLGuBcCgBACgA$xJTSdbc3SX0E4i9PBzFm16GUbLHBjMMg+W3geGFB7lo',1,1,1,1,'2026-02-10 13:28:00');
 UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `perfiles_empresas`;
