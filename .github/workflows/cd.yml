@@ -91,7 +91,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Package deployment bundle
-        run: tar czf deploy-bundle.tgz docker-compose.prod.yml deploy .env.prod.example
+        shell: bash
+        run: |
+          EXTRA_ENV=""
+          if [[ -f ".env.prod.example" ]]; then
+            EXTRA_ENV=".env.prod.example"
+          fi
+          tar czf deploy-bundle.tgz docker-compose.prod.yml deploy ${EXTRA_ENV}
 
       - name: Configure SSH key
         shell: bash
