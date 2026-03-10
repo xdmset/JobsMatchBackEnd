@@ -3,6 +3,9 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "JOBMATCH"
+    ENVIRONMENT: str = "development"
+    LOG_LEVEL: str = "INFO"
+    CORS_ORIGINS: str = ""
     DATABASE_URL: str
     SECRET_KEY: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30

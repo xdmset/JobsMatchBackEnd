@@ -1,0 +1,128 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+
+jobs:
+  context:
+    runs-on: ubuntu-latest
+    outputs:
+      deploy_env: ${{ steps.vars.outputs.deploy_env }}
+      image_name: ${{ steps.vars.outputs.image_name }}
+      image_tag: ${{ steps.vars.outputs.image_tag }}
+      image_ref: ${{ steps.vars.outputs.image_ref }}
+    steps:
+      - name: Resolve deployment context
+        id: vars
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            DEPLOY_ENV="${{ github.event.inputs.environment }}"
+          elif [[ "${{ github.ref_name }}" == "main" ]]; then
+            DEPLOY_ENV="production"
+          else
+            DEPLOY_ENV="staging"
+          fi
+
+          IMAGE_NAME="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/jobmatch-api"
+          IMAGE_TAG="${DEPLOY_ENV}-${GITHUB_SHA::7}"
+          IMAGE_REF="${IMAGE_NAME}:${IMAGE_TAG}"
+
+          echo "deploy_env=${DEPLOY_ENV}" >> "$GITHUB_OUTPUT"
+          echo "image_name=${IMAGE_NAME}" >> "$GITHUB_OUTPUT"
+          echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "image_ref=${IMAGE_REF}" >> "$GITHUB_OUTPUT"
+
+  build_and_push:
+    runs-on: ubuntu-latest
+    needs: context
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ needs.context.outputs.image_ref }}
+            ${{ needs.context.outputs.image_name }}:${{ needs.context.outputs.deploy_env }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs:
+      - context
+      - build_and_push
+    env:
+      VPS_HOST: ${{ needs.context.outputs.deploy_env == 'production' && secrets.VPS_HOST_PROD || secrets.VPS_HOST_STAGING }}
+      VPS_PORT: ${{ needs.context.outputs.deploy_env == 'production' && secrets.VPS_PORT_PROD || secrets.VPS_PORT_STAGING }}
+      VPS_USER: ${{ needs.context.outputs.deploy_env == 'production' && secrets.VPS_USER_PROD || secrets.VPS_USER_STAGING }}
+      VPS_SSH_KEY: ${{ needs.context.outputs.deploy_env == 'production' && secrets.VPS_SSH_KEY_PROD || secrets.VPS_SSH_KEY_STAGING }}
+      APP_DIR: ${{ needs.context.outputs.deploy_env == 'production' && secrets.APP_DIR_PROD || secrets.APP_DIR_STAGING }}
+      GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+      GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Package deployment bundle
+        shell: bash
+        run: |
+          EXTRA_ENV=""
+          if [[ -f ".env.prod.example" ]]; then
+            EXTRA_ENV=".env.prod.example"
+          fi
+          tar czf deploy-bundle.tgz docker-compose.prod.yml deploy ${EXTRA_ENV}
+
+      - name: Configure SSH key
+        shell: bash
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s' "${VPS_SSH_KEY}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+      - name: Copy deployment bundle
+        shell: bash
+        run: |
+          scp -i ~/.ssh/id_ed25519 -P "${VPS_PORT}" -o StrictHostKeyChecking=no \
+            deploy-bundle.tgz "${VPS_USER}@${VPS_HOST}:/tmp/jobmatch-deploy.tgz"
+
+      - name: Deploy to VPS
+        shell: bash
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -p "${VPS_PORT}" -o StrictHostKeyChecking=no \
+            "${VPS_USER}@${VPS_HOST}" <<EOF
+          set -euo pipefail
+          mkdir -p "${APP_DIR}"
+          tar xzf /tmp/jobmatch-deploy.tgz -C "${APP_DIR}"
+          chmod +x "${APP_DIR}/deploy/"*.sh
+          cd "${APP_DIR}"
+          GHCR_USERNAME="${GHCR_USERNAME}" GHCR_TOKEN="${GHCR_TOKEN}" API_IMAGE="${{ needs.context.outputs.image_ref }}" ./deploy/deploy.sh
+          EOF

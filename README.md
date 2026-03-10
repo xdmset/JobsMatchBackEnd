@@ -167,3 +167,123 @@ Notas:
 | `GET /api/v1/suscripciones/usuario/{usuario_id}` | No | Solo propias | Solo propias | Si |
 | `GET /api/v1/suscripciones/` y `GET /api/v1/suscripciones/{suscripcion_id}` | No | No | No | Si |
 | `POST/PUT/DELETE /api/v1/suscripciones/*` | No | No | No | Si |
+
+## Despliegue a VPS con Docker
+
+Arquitectura esperada:
+
+```text
+push a develop/main -> GitHub Actions CD -> build y push a GHCR -> SSH al VPS -> docker compose -> backup MySQL -> deploy API
+```
+
+Archivos agregados para produccion:
+
+- `docker-compose.prod.yml`
+- `.env.prod.example`
+- `deploy/deploy.sh`
+- `deploy/rollback.sh`
+- `deploy/backup_mysql.sh`
+- `deploy/wait_for_health.sh`
+- `.github/workflows/cd.yml`
+
+### Certbot y HTTPS
+
+1. Configura Nginx con el proxy hacia `http://127.0.0.1:8000`.
+2. Instala `certbot` y su plugin (`sudo apt install certbot python3-certbot-nginx`).
+3. Corre:
+
+```bash
+sudo certbot --nginx -d api.jobmatch.com.mx -d files.jobmatch.com.mx
+```
+
+4. Verifica que el cron generado renueve (`sudo certbot renew --dry-run`) y comprueba `/etc/letsencrypt/renewal/`.
+
+### Bootstrap inicial en el VPS
+
+1. Instala Docker Engine y Docker Compose plugin.
+2. Crea el directorio del proyecto, por ejemplo `/opt/jobmatch`.
+3. Copia `.env.prod.example` a `.env.prod` y ajusta secretos, dominios y credenciales.
+4. Asegura que el puerto `8000` quede accesible solo desde tu reverse proxy o firewall.
+5. Ejecuta el primer despliegue manual:
+
+```bash
+cd /opt/jobmatch
+chmod +x deploy/*.sh
+API_IMAGE=ghcr.io/TU_ORG/jobmatch-api:staging ./deploy/deploy.sh
+```
+
+### Secrets requeridos en GitHub Environments
+
+Crea dos environments en GitHub:
+
+- `staging`
+- `production`
+
+En cada uno define:
+
+- `VPS_HOST`
+- `VPS_PORT`
+- `VPS_USER`
+- `VPS_SSH_KEY`
+- `APP_DIR`
+
+Notas:
+
+- `develop` despliega a `staging`
+- `main` despliega a `production`
+- la imagen se publica en `ghcr.io/<owner>/jobmatch-api`
+
+### Variables importantes en `.env.prod`
+
+- `DATABASE_URL`: debe apuntar al contenedor `mysql`
+- `MYSQL_DATABASE`
+- `MYSQL_USER`
+- `MYSQL_PASSWORD`
+- `MYSQL_ROOT_PASSWORD`
+- `SECRET_KEY`
+- `REFRESH_TOKEN_SECRET`
+- `CORS_ORIGINS`
+- `MINIO_*`
+
+Ejemplo:
+
+```env
+DATABASE_URL=mysql+pymysql://jobmatch:change-me@mysql:3306/jobmatch_db
+SECRET_KEY=replace-with-a-32-byte-secret
+REFRESH_TOKEN_SECRET=replace-with-another-32-byte-secret
+CORS_ORIGINS=https://api.tudominio.com,https://app.tudominio.com
+```
+
+### Operacion
+
+Healthcheck:
+
+```bash
+curl http://TU_HOST:8000/health
+```
+
+Deploy manual:
+
+```bash
+API_IMAGE=ghcr.io/TU_ORG/jobmatch-api:production ./deploy/deploy.sh
+```
+
+Rollback:
+
+```bash
+./deploy/rollback.sh
+```
+
+Backup MySQL:
+
+```bash
+./deploy/backup_mysql.sh
+```
+
+### Pasar de develop a main
+
+1. Asegura que staging (`develop`) ya está estable: tests + deploy + health check bajo HTTPS.
+2. Verifica que los secrets `_PROD` existan y que el dominio apunta al VPS con certificados válidos.
+3. Merge o push directo a `main`; el workflow usará los secrets `PROD` y la imagen GHCR correspondiente.
+4. Confirma que el job termina exitoso, que `docker ps` en el VPS refleja la nueva imagen y que `https://api.jobmatch.com.mx/health` responde `ok`.
+5. Si necesitas retroceder rápida, usa `./deploy/rollback.sh` en el VPS antes de volver a lanzar el push en `main`.
