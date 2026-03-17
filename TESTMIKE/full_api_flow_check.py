@@ -113,6 +113,7 @@ def main() -> int:
         assert "/api/v1/user/" in paths
         assert "/api/v1/auth/jwt/login" in paths
         assert "/api/v1/postulaciones/web" in paths
+        assert "/api/v1/media/estudiantes/{usuario_id}/cv" in paths
         assert "/api/v1/retroalimentacion/postulacion/{postulacion_id}" in paths
         assert "/api/v1/suscripciones/" in paths
         assert "/api/v1/suscripciones/usuario/{usuario_id}" in paths
@@ -121,8 +122,11 @@ def main() -> int:
         login_request_body_schema = paths["/api/v1/auth/jwt/login"]["post"]["requestBody"]["content"][
             "application/x-www-form-urlencoded"
         ]["schema"]
-        login_schema_name = login_request_body_schema["$ref"].split("/")[-1]
-        login_request_body = openapi_response.json()["components"]["schemas"][login_schema_name]
+        if "$ref" in login_request_body_schema:
+            login_schema_name = login_request_body_schema["$ref"].split("/")[-1]
+            login_request_body = openapi_response.json()["components"]["schemas"][login_schema_name]
+        else:
+            login_request_body = login_request_body_schema
         assert "email" in login_request_body["properties"]
         assert "username" not in login_request_body["properties"]
 
@@ -139,6 +143,11 @@ def main() -> int:
                 "ubicacion": "CDMX",
                 "modalidad_preferida": "remoto",
             },
+        }
+        admin_payload = {
+            "email": "admin-flow@example.com",
+            "password": "Test1234!",
+            "rol_id": ROL_ADMIN,
         }
         company_payload = {
             "email": "company-flow@example.com",
@@ -178,6 +187,10 @@ def main() -> int:
         assert_status(create_student, 200, "create student")
         student_id = create_student.json()["id"]
 
+        create_admin = requests.post(f"{base_url}/api/v1/user/", json=admin_payload, timeout=10)
+        assert_status(create_admin, 200, "create admin")
+        admin_id = create_admin.json()["id"]
+
         create_company = requests.post(f"{base_url}/api/v1/user/", json=company_payload, timeout=10)
         assert_status(create_company, 200, "create company")
         company_id = create_company.json()["id"]
@@ -186,19 +199,25 @@ def main() -> int:
         assert_status(duplicate_student, 400, "duplicate email rejected")
 
         student_login = login(base_url, student_payload["email"], student_payload["password"])
+        admin_login = login(base_url, admin_payload["email"], admin_payload["password"])
         company_login = login(base_url, company_payload["email"], company_payload["password"])
         assert student_login["access_token"] != company_login["access_token"]
 
-        list_users = requests.get(f"{base_url}/api/v1/user/", timeout=10)
-        assert_status(list_users, 200, "list users")
-        assert len(list_users.json()) == 2
+        admin_headers = {"Authorization": f"Bearer {admin_login['access_token']}"}
+        student_headers = {"Authorization": f"Bearer {student_login['access_token']}"}
+        company_headers = {"Authorization": f"Bearer {company_login['access_token']}"}
 
-        list_subscriptions = requests.get(f"{base_url}/api/v1/suscripciones/", timeout=10)
+        list_users = requests.get(f"{base_url}/api/v1/user/", headers=admin_headers, timeout=10)
+        assert_status(list_users, 200, "list users")
+        assert len(list_users.json()) == 3
+
+        list_subscriptions = requests.get(f"{base_url}/api/v1/suscripciones/", headers=admin_headers, timeout=10)
         assert_status(list_subscriptions, 200, "list suscripciones")
-        assert len(list_subscriptions.json()) == 2
+        assert len(list_subscriptions.json()) == 3
 
         list_user_subscriptions = requests.get(
             f"{base_url}/api/v1/suscripciones/usuario/{student_id}",
+            headers=student_headers,
             timeout=10,
         )
         assert_status(list_user_subscriptions, 200, "list suscripciones by user")
@@ -210,6 +229,7 @@ def main() -> int:
 
         get_subscription = requests.get(
             f"{base_url}/api/v1/suscripciones/{subscription_id}",
+            headers=admin_headers,
             timeout=10,
         )
         assert_status(get_subscription, 200, "get suscripcion")
@@ -221,6 +241,7 @@ def main() -> int:
                 "tipo_plan": "premium",
                 "fecha_fin": "2026-05-08",
             },
+            headers=admin_headers,
             timeout=10,
         )
         assert_status(update_subscription, 200, "update suscripcion")
@@ -228,7 +249,7 @@ def main() -> int:
         assert updated_subscription["tipo_plan"] == "premium"
         assert updated_subscription["fecha_fin"] == "2026-05-08"
 
-        synced_user = requests.get(f"{base_url}/api/v1/user/", timeout=10)
+        synced_user = requests.get(f"{base_url}/api/v1/user/", headers=admin_headers, timeout=10)
         assert_status(synced_user, 200, "list users after suscripcion update")
         student_user = next(item for item in synced_user.json() if item["id"] == student_id)
         assert student_user["es_premium"] is True
@@ -248,6 +269,7 @@ def main() -> int:
                 "ubicacion": "Remote",
                 "modalidad_preferida": "hibrido",
             },
+            headers=student_headers,
             timeout=10,
         )
         assert_status(update_student_profile, 200, "update student profile")
@@ -267,6 +289,7 @@ def main() -> int:
                 "ubicacion_sede": "Remote",
                 "foto_perfil_url": "https://example.com/logo-new.png",
             },
+            headers=company_headers,
             timeout=10,
         )
         assert_status(update_company_profile, 200, "update company profile")
@@ -283,6 +306,7 @@ def main() -> int:
                 "sueldo_minimo": 1000,
                 "sueldo_maximo": 2000,
             },
+            headers=company_headers,
             timeout=10,
         )
         assert_status(create_vacancy_web, 200, "create first vacancy")
@@ -291,6 +315,7 @@ def main() -> int:
         update_vacancy_state = requests.put(
             f"{base_url}/api/v1/vacante/{first_vacancy_id}",
             json={"estado": "pausada"},
+            headers=company_headers,
             timeout=10,
         )
         assert_status(update_vacancy_state, 200, "update vacancy estado")
@@ -307,6 +332,7 @@ def main() -> int:
                 "sueldo_minimo": 900,
                 "sueldo_maximo": 1500,
             },
+            headers=company_headers,
             timeout=10,
         )
         assert_status(create_vacancy_swipe, 200, "create second vacancy")
@@ -328,6 +354,7 @@ def main() -> int:
         apply_web = requests.post(
             f"{base_url}/api/v1/postulaciones/web",
             json={"estudiante_id": student_id, "vacante_id": first_vacancy_id},
+            headers=student_headers,
             timeout=10,
         )
         assert_status(apply_web, 200, "web apply")
@@ -339,12 +366,14 @@ def main() -> int:
         apply_web_duplicate = requests.post(
             f"{base_url}/api/v1/postulaciones/web",
             json={"estudiante_id": student_id, "vacante_id": first_vacancy_id},
+            headers=student_headers,
             timeout=10,
         )
         assert_status(apply_web_duplicate, 409, "prevent duplicate web apply")
 
         company_applications = requests.get(
             f"{base_url}/api/v1/postulaciones/empresa/{company_id}",
+            headers=company_headers,
             timeout=10,
         )
         assert_status(company_applications, 200, "list company applications")
@@ -360,12 +389,14 @@ def main() -> int:
                     "sugerencias_perfil": "Agregar proyectos backend",
                 },
             },
+            headers=company_headers,
             timeout=10,
         )
         assert_status(reject_application, 200, "reject application with feedback")
 
         get_feedback = requests.get(
             f"{base_url}/api/v1/retroalimentacion/postulacion/{first_application['id']}",
+            headers=company_headers,
             timeout=10,
         )
         assert_status(get_feedback, 200, "get feedback by postulacion")
@@ -393,6 +424,7 @@ def main() -> int:
         reapply_web = requests.post(
             f"{base_url}/api/v1/postulaciones/web",
             json={"estudiante_id": student_id, "vacante_id": first_vacancy_id},
+            headers=student_headers,
             timeout=10,
         )
         assert_status(reapply_web, 200, "reapply after rejection")
@@ -402,6 +434,7 @@ def main() -> int:
         student_swipe = requests.post(
             f"{base_url}/api/v1/swipes/{student_id}",
             json={"vacante_id": second_vacancy_id, "interes_estudiante": True},
+            headers=student_headers,
             timeout=10,
         )
         assert_status(student_swipe, 200, "student swipe")
@@ -414,6 +447,7 @@ def main() -> int:
                 "vacante_id": second_vacancy_id,
                 "interes_empresa": True,
             },
+            headers=company_headers,
             timeout=10,
         )
         assert_status(company_swipe, 200, "company swipe")
@@ -423,6 +457,7 @@ def main() -> int:
 
         final_company_applications = requests.get(
             f"{base_url}/api/v1/postulaciones/empresa/{company_id}",
+            headers=company_headers,
             timeout=10,
         )
         assert_status(final_company_applications, 200, "list final company applications")
@@ -437,28 +472,39 @@ def main() -> int:
 
         delete_subscription = requests.delete(
             f"{base_url}/api/v1/suscripciones/{subscription_id}",
+            headers=admin_headers,
             timeout=10,
         )
         assert_status(delete_subscription, 200, "delete suscripcion")
 
-        list_subscriptions_after_delete = requests.get(f"{base_url}/api/v1/suscripciones/", timeout=10)
+        list_subscriptions_after_delete = requests.get(
+            f"{base_url}/api/v1/suscripciones/",
+            headers=admin_headers,
+            timeout=10,
+        )
         assert_status(list_subscriptions_after_delete, 200, "list suscripciones after delete")
-        assert len(list_subscriptions_after_delete.json()) == 1
+        assert len(list_subscriptions_after_delete.json()) == 2
 
-        users_after_subscription_delete = requests.get(f"{base_url}/api/v1/user/", timeout=10)
+        users_after_subscription_delete = requests.get(
+            f"{base_url}/api/v1/user/",
+            headers=admin_headers,
+            timeout=10,
+        )
         assert_status(users_after_subscription_delete, 200, "list users after suscripcion delete")
         student_after_delete = next(item for item in users_after_subscription_delete.json() if item["id"] == student_id)
         assert student_after_delete["es_premium"] is False
 
-        delete_student = requests.delete(f"{base_url}/api/v1/user/{student_id}", timeout=10)
+        delete_student = requests.delete(f"{base_url}/api/v1/user/{student_id}", headers=student_headers, timeout=10)
         assert_status(delete_student, 200, "delete student")
 
-        delete_company = requests.delete(f"{base_url}/api/v1/user/{company_id}", timeout=10)
+        delete_company = requests.delete(f"{base_url}/api/v1/user/{company_id}", headers=company_headers, timeout=10)
         assert_status(delete_company, 200, "delete company")
 
-        final_users = requests.get(f"{base_url}/api/v1/user/", timeout=10)
+        final_users = requests.get(f"{base_url}/api/v1/user/", headers=admin_headers, timeout=10)
         assert_status(final_users, 200, "final user list")
-        assert final_users.json() == []
+        remaining_users = final_users.json()
+        assert len(remaining_users) == 1
+        assert remaining_users[0]["id"] == admin_id
     finally:
         server.terminate()
         try:

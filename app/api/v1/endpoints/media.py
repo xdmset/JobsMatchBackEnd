@@ -18,8 +18,12 @@ from app.services.storage_service import StorageService
 
 router = APIRouter()
 
-IMAGE_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
-DOCUMENT_CONTENT_TYPES = {"application/pdf"}
+IMAGE_CONTENT_TYPES = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
+DOCUMENT_CONTENT_TYPES = {
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+}
 
 
 def _read_upload(file: UploadFile, allowed_content_types: set[str], max_size: int) -> tuple[bytes, str]:
@@ -37,9 +41,12 @@ def _read_upload(file: UploadFile, allowed_content_types: set[str], max_size: in
     if not extension:
         guessed_extension = {
             "image/jpeg": ".jpg",
+            "image/jpg": ".jpg",
             "image/png": ".png",
             "image/webp": ".webp",
             "application/pdf": ".pdf",
+            "application/msword": ".doc",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
         }
         extension = guessed_extension.get(file.content_type, "")
 
@@ -161,7 +168,16 @@ def get_estudiante_cv(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    ensure_same_user(current_user, usuario_id, NombreRol.estudiante.value)
+    # Estudiante: solo su propio CV 
+    # Empresa/Admin: pueden ver CVs de estudiantes.
+    if not current_user.is_superuser:
+        user_role = current_user.rol.nombre.value if current_user.rol else None
+        if user_role == NombreRol.estudiante.value:
+            ensure_same_user(current_user, usuario_id, NombreRol.estudiante.value)
+        elif user_role in (NombreRol.empresa.value, NombreRol.admin.value):
+            pass
+        else:
+            raise HTTPException(status_code=403, detail="No tienes permisos para esta accion")
     estudiante = db.query(PerfilEstudiante).filter(PerfilEstudiante.usuario_id == usuario_id).first()
     if not estudiante or not estudiante.cv_storage_key:
         raise HTTPException(status_code=404, detail="CV no encontrado")
