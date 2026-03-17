@@ -34,7 +34,7 @@ CREATE TABLE `roles` (
   UNIQUE KEY `nombre` (`nombre`),
   KEY `ix_roles_id` (`id`),
   CONSTRAINT `nombre_rol` CHECK (`nombre` in ('admin','estudiante','empresa'))
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 LOCK TABLES `roles` WRITE;
 INSERT INTO `roles` VALUES
@@ -59,13 +59,31 @@ CREATE TABLE `usuarios` (
   KEY `rol_id` (`rol_id`),
   KEY `ix_usuarios_id` (`id`),
   CONSTRAINT `usuarios_ibfk_1` FOREIGN KEY (`rol_id`) REFERENCES `roles` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 LOCK TABLES `usuarios` WRITE;
 INSERT INTO `usuarios` VALUES
-(1,2,'estudiante@test.com','$argon2id$v=19$m=65536,t=3,p=4$demo_student_hash',1,0,1,0,'2026-02-09 19:05:06'),
-(2,3,'empresa@test.com','$argon2id$v=19$m=65536,t=3,p=4$demo_company_hash',1,0,1,1,'2026-02-09 19:06:34'),
-(3,1,'admin@test.com','$argon2id$v=19$m=65536,t=3,p=4$RyhFyPm/lzLGuBcCgBACgA$xJTSdbc3SX0E4i9PBzFm16GUbLHBjMMg+W3geGFB7lo',1,1,1,1,'2026-02-10 13:28:00');
+(1,2,'estudiante1@test.com','$argon2id$v=19$m=65536,t=3,p=4$hHBu7f3few8h5FzLea8VAg$ZbazLyDANyDJ5S2m6tHnx2oKzsbXrfOgkrH43mxdjXg',1,0,1,0,'2026-02-09 19:05:06'),
+(2,3,'empresa1@test.com','$argon2id$v=19$m=65536,t=3,p=4$v7f2ntM655wzprSWUorR+g$QKibglY6fWSxq7Iv4hDq40NFMdieQb9S+Z2O1QibuyM',1,0,1,1,'2026-02-09 19:06:34'),
+(3,1,'admin@test.com','$argon2id$v=19$m=65536,t=3,p=4$RyhFyPm/lzLGuBcCgBACgA$xJTSdbc3SX0E4i9PBzFm16GUbLHBjMMg+W3geGFB7lo',1,1,1,1,'2026-02-10 13:28:00'),
+(4,2,'estudiante2@test.com','$argon2id$v=19$m=65536,t=3,p=4$hHBu7f3few8h5FzLea8VAg$ZbazLyDANyDJ5S2m6tHnx2oKzsbXrfOgkrH43mxdjXg',1,0,1,0,'2026-02-10 14:00:00'),
+(5,2,'estudiante3@test.com','$argon2id$v=19$m=65536,t=3,p=4$hHBu7f3few8h5FzLea8VAg$ZbazLyDANyDJ5S2m6tHnx2oKzsbXrfOgkrH43mxdjXg',1,0,1,0,'2026-02-10 14:01:00'),
+(6,2,'estudiante4@test.com','$argon2id$v=19$m=65536,t=3,p=4$hHBu7f3few8h5FzLea8VAg$ZbazLyDANyDJ5S2m6tHnx2oKzsbXrfOgkrH43mxdjXg',1,0,1,0,'2026-02-10 14:02:00'),
+(7,2,'estudiante5@test.com','$argon2id$v=19$m=65536,t=3,p=4$hHBu7f3few8h5FzLea8VAg$ZbazLyDANyDJ5S2m6tHnx2oKzsbXrfOgkrH43mxdjXg',1,0,1,0,'2026-02-10 14:03:00'),
+(8,2,'estudiante6@test.com','$argon2id$v=19$m=65536,t=3,p=4$hHBu7f3few8h5FzLea8VAg$ZbazLyDANyDJ5S2m6tHnx2oKzsbXrfOgkrH43mxdjXg',1,0,1,0,'2026-02-10 14:04:00'),
+(9,2,'estudiante7@test.com','$argon2id$v=19$m=65536,t=3,p=4$hHBu7f3few8h5FzLea8VAg$ZbazLyDANyDJ5S2m6tHnx2oKzsbXrfOgkrH43mxdjXg',1,0,1,0,'2026-02-10 14:05:00'),
+(10,2,'estudiante8@test.com','$argon2id$v=19$m=65536,t=3,p=4$hHBu7f3few8h5FzLea8VAg$ZbazLyDANyDJ5S2m6tHnx2oKzsbXrfOgkrH43mxdjXg',1,0,1,0,'2026-02-10 14:06:00'),
+(11,2,'estudiante9@test.com','$argon2id$v=19$m=65536,t=3,p=4$hHBu7f3few8h5FzLea8VAg$ZbazLyDANyDJ5S2m6tHnx2oKzsbXrfOgkrH43mxdjXg',1,0,1,0,'2026-02-10 14:07:00'),
+(12,2,'estudiante10@test.com','$argon2id$v=19$m=65536,t=3,p=4$hHBu7f3few8h5FzLea8VAg$ZbazLyDANyDJ5S2m6tHnx2oKzsbXrfOgkrH43mxdjXg',1,0,1,0,'2026-02-10 14:08:00'),
+(13,3,'empresa2@test.com','$argon2id$v=19$m=65536,t=3,p=4$v7f2ntM655wzprSWUorR+g$QKibglY6fWSxq7Iv4hDq40NFMdieQb9S+Z2O1QibuyM',1,0,1,0,'2026-02-10 15:00:00'),
+(14,3,'empresa3@test.com','$argon2id$v=19$m=65536,t=3,p=4$v7f2ntM655wzprSWUorR+g$QKibglY6fWSxq7Iv4hDq40NFMdieQb9S+Z2O1QibuyM',1,0,1,0,'2026-02-10 15:01:00'),
+(15,3,'empresa4@test.com','$argon2id$v=19$m=65536,t=3,p=4$v7f2ntM655wzprSWUorR+g$QKibglY6fWSxq7Iv4hDq40NFMdieQb9S+Z2O1QibuyM',1,0,1,0,'2026-02-10 15:02:00'),
+(16,3,'empresa5@test.com','$argon2id$v=19$m=65536,t=3,p=4$v7f2ntM655wzprSWUorR+g$QKibglY6fWSxq7Iv4hDq40NFMdieQb9S+Z2O1QibuyM',1,0,1,0,'2026-02-10 15:03:00'),
+(17,3,'empresa6@test.com','$argon2id$v=19$m=65536,t=3,p=4$v7f2ntM655wzprSWUorR+g$QKibglY6fWSxq7Iv4hDq40NFMdieQb9S+Z2O1QibuyM',1,0,1,0,'2026-02-10 15:04:00'),
+(18,3,'empresa7@test.com','$argon2id$v=19$m=65536,t=3,p=4$v7f2ntM655wzprSWUorR+g$QKibglY6fWSxq7Iv4hDq40NFMdieQb9S+Z2O1QibuyM',1,0,1,0,'2026-02-10 15:05:00'),
+(19,3,'empresa8@test.com','$argon2id$v=19$m=65536,t=3,p=4$v7f2ntM655wzprSWUorR+g$QKibglY6fWSxq7Iv4hDq40NFMdieQb9S+Z2O1QibuyM',1,0,1,0,'2026-02-10 15:06:00'),
+(20,3,'empresa9@test.com','$argon2id$v=19$m=65536,t=3,p=4$v7f2ntM655wzprSWUorR+g$QKibglY6fWSxq7Iv4hDq40NFMdieQb9S+Z2O1QibuyM',1,0,1,0,'2026-02-10 15:07:00'),
+(21,3,'empresa10@test.com','$argon2id$v=19$m=65536,t=3,p=4$v7f2ntM655wzprSWUorR+g$QKibglY6fWSxq7Iv4hDq40NFMdieQb9S+Z2O1QibuyM',1,0,1,0,'2026-02-10 15:08:00');
 UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `perfiles_empresas`;
@@ -84,7 +102,16 @@ CREATE TABLE `perfiles_empresas` (
 
 LOCK TABLES `perfiles_empresas` WRITE;
 INSERT INTO `perfiles_empresas` VALUES
-(2,'Tech Solutions','Tecnologia','Empresa de desarrollo de software','https://techsolutions.example','Tijuana, BC',NULL,NULL);
+(2,'Tech Solutions','Tecnologia','Empresa de desarrollo de software','https://techsolutions.example','Tijuana, BC',NULL,NULL),
+(13,'Norte Digital','Tecnologia','Consultoria de software','https://nortedigital.example','Tijuana, BC',NULL,NULL),
+(14,'Baja Logistics','Logistica','Servicios de logistica regional','https://bajalogistics.example','Mexicali, BC',NULL,NULL),
+(15,'AgroData','Agroindustria','Analitica para agricultura','https://agrodata.example','Ensenada, BC',NULL,NULL),
+(16,'HealthSoft','Salud','Software clinico','https://healthsoft.example','Tijuana, BC',NULL,NULL),
+(17,'FinCore','Finanzas','Plataforma de pagos','https://fincore.example','Tijuana, BC',NULL,NULL),
+(18,'Oceanic Labs','Investigacion','I+D marino','https://oceaniclabs.example','Ensenada, BC',NULL,NULL),
+(19,'RetailNova','Retail','Ecommerce regional','https://retailnova.example','Mexicali, BC',NULL,NULL),
+(20,'EduNext','Educacion','Plataforma edtech','https://edunext.example','Tijuana, BC',NULL,NULL),
+(21,'GreenGrid','Energia','Soluciones renovables','https://greengrid.example','Rosarito, BC',NULL,NULL);
 UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `perfiles_estudiantes`;
@@ -108,7 +135,16 @@ CREATE TABLE `perfiles_estudiantes` (
 
 LOCK TABLES `perfiles_estudiantes` WRITE;
 INSERT INTO `perfiles_estudiantes` VALUES
-(1,'Leonel Test','UTT','TSU','Desarrollador Backend Jr.','{\"python\": \"avanzado\", \"fastapi\": \"intermedio\"}',NULL,NULL,NULL,NULL,NULL,'Tijuana','remoto');
+(1,'Leonel Test','UTT','TSU','Desarrollador Backend Jr.','{\"python\": \"avanzado\", \"fastapi\": \"intermedio\"}',NULL,NULL,NULL,NULL,NULL,'Tijuana','remoto'),
+(4,'Maria Lopez','UABC','Licenciatura','Estudiante de sistemas','{\"java\": \"intermedio\"}',NULL,NULL,NULL,NULL,NULL,'Mexicali','presencial'),
+(5,'Carlos Ruiz','ITT','Ingenieria','Apasionado por datos','{\"sql\": \"intermedio\", \"python\": \"basico\"}',NULL,NULL,NULL,NULL,NULL,'Tijuana','hibrido'),
+(6,'Ana Perez','UPBC','TSU','Frontend trainee','{\"react\": \"basico\", \"css\": \"intermedio\"}',NULL,NULL,NULL,NULL,NULL,'Ensenada','remoto'),
+(7,'Luis Gomez','UABC','Licenciatura','QA junior','{\"testing\": \"intermedio\"}',NULL,NULL,NULL,NULL,NULL,'Tijuana','presencial'),
+(8,'Sofia Diaz','CETYS','Ingenieria','Mobile dev','{\"kotlin\": \"basico\"}',NULL,NULL,NULL,NULL,NULL,'Mexicali','hibrido'),
+(9,'Diego Torres','UTT','TSU','Backend trainee','{\"node\": \"basico\", \"express\": \"basico\"}',NULL,NULL,NULL,NULL,NULL,'Tijuana','remoto'),
+(10,'Valeria Mora','UABC','Licenciatura','UX/UI junior','{\"figma\": \"intermedio\"}',NULL,NULL,NULL,NULL,NULL,'Ensenada','presencial'),
+(11,'Jorge Neri','ITT','Ingenieria','DevOps junior','{\"linux\": \"intermedio\", \"docker\": \"basico\"}',NULL,NULL,NULL,NULL,NULL,'Tijuana','hibrido'),
+(12,'Fernanda Cruz','UPBC','TSU','Data analyst','{\"excel\": \"avanzado\", \"powerbi\": \"basico\"}',NULL,NULL,NULL,NULL,NULL,'Mexicali','remoto');
 UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `vacantes`;
@@ -131,12 +167,60 @@ CREATE TABLE `vacantes` (
   KEY `ix_vacantes_id` (`id`),
   KEY `idx_vacantes_empresa_estado` (`empresa_id`,`estado`),
   CONSTRAINT `vacantes_ibfk_1` FOREIGN KEY (`empresa_id`) REFERENCES `perfiles_empresas` (`usuario_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=51 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 LOCK TABLES `vacantes` WRITE;
 INSERT INTO `vacantes` VALUES
 (1,2,'Backend Developer Python','Desarrollo de APIs con FastAPI','Conocimientos en SQL y Python',NULL,'remoto','Tijuana, BC',15000.00,20000.00,'MXN','activa','2026-02-09 19:07:31'),
-(2,2,'Frontend Developer React','Desarrollo de interfaces web','React y CSS avanzado',NULL,'hibrido','Tijuana, BC',12000.00,18000.00,'MXN','activa','2026-02-09 19:07:31');
+(2,2,'Frontend Developer React','Desarrollo de interfaces web','React y CSS avanzado',NULL,'hibrido','Tijuana, BC',12000.00,18000.00,'MXN','activa','2026-02-09 19:07:31'),
+(3,2,'QA Automation Jr','Pruebas automatizadas de API y UI','Python y Selenium',NULL,'hibrido','Tijuana, BC',12000.00,17000.00,'MXN','activa','2026-02-10 09:00:00'),
+(4,2,'Data Analyst Jr','Analisis de datos y reportes','SQL y Excel',NULL,'remoto','Tijuana, BC',11000.00,16000.00,'MXN','activa','2026-02-10 09:05:00'),
+(5,2,'DevOps Intern','Apoyo en CI/CD y monitoreo','Linux y Docker basico',NULL,'presencial','Tijuana, BC',9000.00,13000.00,'MXN','activa','2026-02-10 09:10:00'),
+(6,13,'Fullstack Developer','Desarrollo web end to end','Node y React',NULL,'remoto','Tijuana, BC',14000.00,20000.00,'MXN','activa','2026-02-10 10:00:00'),
+(7,13,'UX Designer Jr','Diseno de interfaces y prototipos','Figma y principios UX',NULL,'hibrido','Tijuana, BC',11000.00,16000.00,'MXN','activa','2026-02-10 10:05:00'),
+(8,13,'Backend Node.js','APIs REST y servicios','Node.js y SQL',NULL,'remoto','Tijuana, BC',13000.00,19000.00,'MXN','activa','2026-02-10 10:10:00'),
+(9,13,'Soporte Tecnico','Atencion a clientes y tickets','Windows y redes basico',NULL,'presencial','Tijuana, BC',9000.00,13000.00,'MXN','activa','2026-02-10 10:15:00'),
+(10,13,'Mobile Developer','Apps moviles multiplataforma','Flutter o React Native',NULL,'hibrido','Tijuana, BC',13000.00,19000.00,'MXN','activa','2026-02-10 10:20:00'),
+(11,14,'Analista de Logistica','Planificacion de rutas y KPIs','Excel y pensamiento analitico',NULL,'presencial','Mexicali, BC',10000.00,15000.00,'MXN','activa','2026-02-10 11:00:00'),
+(12,14,'Coordinador de Rutas','Seguimiento de entregas','Comunicacion y organizacion',NULL,'presencial','Mexicali, BC',11000.00,16000.00,'MXN','activa','2026-02-10 11:05:00'),
+(13,14,'Desarrollador Integraciones','Integraciones con sistemas externos','APIs y SQL',NULL,'hibrido','Mexicali, BC',13000.00,19000.00,'MXN','activa','2026-02-10 11:10:00'),
+(14,14,'Analista de Datos Operativos','Dashboards y reportes','SQL y PowerBI',NULL,'remoto','Mexicali, BC',12000.00,17000.00,'MXN','activa','2026-02-10 11:15:00'),
+(15,14,'QA Sistemas','Pruebas funcionales de sistemas','Casos de prueba y reportes',NULL,'hibrido','Mexicali, BC',10000.00,15000.00,'MXN','activa','2026-02-10 11:20:00'),
+(16,15,'Data Engineer Jr','Pipelines de datos para agricultura','Python y ETL',NULL,'remoto','Ensenada, BC',13000.00,19000.00,'MXN','activa','2026-02-10 12:00:00'),
+(17,15,'Ingeniero IoT','Sensores y telemetria de campo','Electronica y redes',NULL,'presencial','Ensenada, BC',14000.00,20000.00,'MXN','activa','2026-02-10 12:05:00'),
+(18,15,'Analista GIS','Mapas y capas geoespaciales','QGIS y analisis espacial',NULL,'hibrido','Ensenada, BC',12000.00,17000.00,'MXN','activa','2026-02-10 12:10:00'),
+(19,15,'Backend API','Servicios para plataforma de datos','Python y SQL',NULL,'remoto','Ensenada, BC',13000.00,19000.00,'MXN','activa','2026-02-10 12:15:00'),
+(20,15,'Soporte Tecnico Campo','Soporte en sitio a clientes','Atencion y manejo de equipo',NULL,'presencial','Ensenada, BC',9000.00,13000.00,'MXN','activa','2026-02-10 12:20:00'),
+(21,16,'QA Clinico','Pruebas de software clinico','Documentacion y pruebas',NULL,'hibrido','Tijuana, BC',12000.00,17000.00,'MXN','activa','2026-02-10 13:00:00'),
+(22,16,'Frontend Vue','Interfaces web para salud','Vue y CSS',NULL,'remoto','Tijuana, BC',13000.00,18000.00,'MXN','activa','2026-02-10 13:05:00'),
+(23,16,'Backend Java','Servicios y microservicios','Java y SQL',NULL,'hibrido','Tijuana, BC',14000.00,20000.00,'MXN','activa','2026-02-10 13:10:00'),
+(24,16,'Soporte Implementacion','Implementacion en clinicas','Capacitacion y soporte',NULL,'presencial','Tijuana, BC',11000.00,16000.00,'MXN','activa','2026-02-10 13:15:00'),
+(25,16,'Data Analyst Salud','Analisis de datos clinicos','SQL y Excel',NULL,'remoto','Tijuana, BC',12000.00,17000.00,'MXN','activa','2026-02-10 13:20:00'),
+(26,17,'Backend Go','Servicios para pagos','Go y bases de datos',NULL,'remoto','Tijuana, BC',15000.00,22000.00,'MXN','activa','2026-02-10 14:00:00'),
+(27,17,'Mobile Flutter','App financiera movil','Flutter y consumo de APIs',NULL,'hibrido','Tijuana, BC',14000.00,20000.00,'MXN','activa','2026-02-10 14:05:00'),
+(28,17,'Analista Riesgo','Modelos de riesgo y reportes','Excel y analisis cuantitativo',NULL,'presencial','Tijuana, BC',12000.00,18000.00,'MXN','activa','2026-02-10 14:10:00'),
+(29,17,'DevOps Cloud','Infraestructura y despliegues','AWS y CI/CD',NULL,'remoto','Tijuana, BC',15000.00,22000.00,'MXN','activa','2026-02-10 14:15:00'),
+(30,17,'Seguridad Aplicaciones','Revision y hardening','OWASP y pruebas basicas',NULL,'hibrido','Tijuana, BC',14000.00,21000.00,'MXN','activa','2026-02-10 14:20:00'),
+(31,18,'Investigador Datos','Analisis de datos oceanicos','Python y estadistica',NULL,'presencial','Ensenada, BC',13000.00,19000.00,'MXN','activa','2026-02-10 15:00:00'),
+(32,18,'Desarrollador Python','Herramientas de investigacion','Python y APIs',NULL,'remoto','Ensenada, BC',13000.00,19000.00,'MXN','activa','2026-02-10 15:05:00'),
+(33,18,'Analista QA','Pruebas de software cientifico','Casos de prueba',NULL,'hibrido','Ensenada, BC',11000.00,16000.00,'MXN','activa','2026-02-10 15:10:00'),
+(34,18,'Tecnico Laboratorio','Operacion de equipo de laboratorio','Buenas practicas',NULL,'presencial','Ensenada, BC',10000.00,15000.00,'MXN','activa','2026-02-10 15:15:00'),
+(35,18,'Data Visualization','Visualizacion de datos','Python y herramientas BI',NULL,'remoto','Ensenada, BC',12000.00,17000.00,'MXN','activa','2026-02-10 15:20:00'),
+(36,19,'Fullstack Ecommerce','Plataforma de ecommerce','React y Node',NULL,'hibrido','Mexicali, BC',14000.00,20000.00,'MXN','activa','2026-02-10 16:00:00'),
+(37,19,'Analista Marketing Digital','Campanas y metrics','Ads y analisis web',NULL,'remoto','Mexicali, BC',11000.00,16000.00,'MXN','activa','2026-02-10 16:05:00'),
+(38,19,'Especialista SEO','Optimizacion buscadores','SEO onpage y herramientas',NULL,'remoto','Mexicali, BC',11000.00,16000.00,'MXN','activa','2026-02-10 16:10:00'),
+(39,19,'Soporte Plataforma','Soporte a vendedores','Atencion y soporte tecnico',NULL,'presencial','Mexicali, BC',9000.00,13000.00,'MXN','activa','2026-02-10 16:15:00'),
+(40,19,'Data Engineer','Pipelines y modelado','SQL y ETL',NULL,'hibrido','Mexicali, BC',14000.00,20000.00,'MXN','activa','2026-02-10 16:20:00'),
+(41,20,'Frontend React','Plataforma educativa web','React y CSS',NULL,'remoto','Tijuana, BC',13000.00,18000.00,'MXN','activa','2026-02-10 17:00:00'),
+(42,20,'Backend Django','Servicios para edtech','Python y Django',NULL,'hibrido','Tijuana, BC',14000.00,20000.00,'MXN','activa','2026-02-10 17:05:00'),
+(43,20,'Content Designer','Diseno de contenido educativo','Redaccion y herramientas web',NULL,'remoto','Tijuana, BC',10000.00,15000.00,'MXN','activa','2026-02-10 17:10:00'),
+(44,20,'QA Manual','Pruebas manuales de plataforma','Casos de prueba',NULL,'presencial','Tijuana, BC',10000.00,15000.00,'MXN','activa','2026-02-10 17:15:00'),
+(45,20,'Data Analyst Educacion','Analisis de uso y KPIs','SQL y BI',NULL,'remoto','Tijuana, BC',12000.00,17000.00,'MXN','activa','2026-02-10 17:20:00'),
+(46,21,'Ingeniero Energias Renovables','Proyectos de energia limpia','Ingenieria y gestion',NULL,'presencial','Rosarito, BC',15000.00,22000.00,'MXN','activa','2026-02-10 18:00:00'),
+(47,21,'Analista IoT','Sensores y telemetria','Electronica y datos',NULL,'hibrido','Rosarito, BC',13000.00,19000.00,'MXN','activa','2026-02-10 18:05:00'),
+(48,21,'Backend API','Servicios para energia','Python y SQL',NULL,'remoto','Rosarito, BC',14000.00,20000.00,'MXN','activa','2026-02-10 18:10:00'),
+(49,21,'Project Manager Jr','Coordinacion de proyectos','Planificacion y comunicacion',NULL,'presencial','Rosarito, BC',12000.00,17000.00,'MXN','activa','2026-02-10 18:15:00'),
+(50,21,'Data Analyst Energia','Analisis de consumo','SQL y Excel',NULL,'remoto','Rosarito, BC',12000.00,17000.00,'MXN','activa','2026-02-10 18:20:00');
 UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `interacciones_swipe`;
@@ -261,7 +345,25 @@ LOCK TABLES `suscripciones` WRITE;
 INSERT INTO `suscripciones` VALUES
 (1,1,'free','2026-02-09',NULL),
 (2,2,'premium','2026-02-09',NULL),
-(3,3,'premium','2026-02-10',NULL);
+(3,3,'premium','2026-02-10',NULL),
+(4,4,'free','2026-02-10',NULL),
+(5,5,'free','2026-02-10',NULL),
+(6,6,'free','2026-02-10',NULL),
+(7,7,'free','2026-02-10',NULL),
+(8,8,'free','2026-02-10',NULL),
+(9,9,'free','2026-02-10',NULL),
+(10,10,'free','2026-02-10',NULL),
+(11,11,'free','2026-02-10',NULL),
+(12,12,'free','2026-02-10',NULL),
+(13,13,'free','2026-02-10',NULL),
+(14,14,'free','2026-02-10',NULL),
+(15,15,'free','2026-02-10',NULL),
+(16,16,'free','2026-02-10',NULL),
+(17,17,'free','2026-02-10',NULL),
+(18,18,'free','2026-02-10',NULL),
+(19,19,'free','2026-02-10',NULL),
+(20,20,'free','2026-02-10',NULL),
+(21,21,'free','2026-02-10',NULL);
 UNLOCK TABLES;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
