@@ -3,6 +3,8 @@ from typing import Optional
 from datetime import datetime
 from app.schemas.perfil_estudiante import PerfilEstudianteCreate
 from app.schemas.perfil_empresa import PerfilEmpresaCreate
+from app.schemas.perfil_estudiante import PerfilEstudiante
+from app.schemas.perfil_empresa import PerfilEmpresa
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -21,3 +23,15 @@ class User(UserBase):
 
     class Config:
         from_attributes = True
+
+class UserMe(User):
+    rol: Optional[str] = None
+    is_active: bool
+    is_superuser: bool
+    is_verified: bool
+    perfil_estudiante: Optional[PerfilEstudiante] = None
+    perfil_empresa: Optional[PerfilEmpresa] = None
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str
