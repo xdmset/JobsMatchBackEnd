@@ -1,3 +1,4 @@
+from datetime import date
 from types import SimpleNamespace
 
 from app.services import profile_media
@@ -16,6 +17,7 @@ def test_serialize_estudiante_profile_hides_storage_keys_and_resolves_urls(monke
         nivel_academico="Licenciatura",
         biografia="Bio",
         habilidades=["Python"],
+        fecha_nacimiento=date(2001, 5, 17),
         ubicacion="Tijuana",
         modalidad_preferida="remoto",
         cv_tipo_archivo="application/pdf",
@@ -29,6 +31,7 @@ def test_serialize_estudiante_profile_hides_storage_keys_and_resolves_urls(monke
 
     assert payload["cv_url"] == "http://localhost:9000/estudiantes/cv/2/file.pdf"
     assert payload["foto_perfil_url"] == "http://localhost:9000/estudiantes/fotos/2/file.jpg"
+    assert payload["fecha_nacimiento"] == date(2001, 5, 17)
     assert "cv_storage_key" not in payload
     assert "foto_perfil_storage_key" not in payload
 
