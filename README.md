@@ -123,7 +123,7 @@ Reglas de acceso:
 
 - Publico: `POST /auth/jwt/login`, `POST /auth/jwt/refresh`, `POST /user`, `GET /vacante`, `GET /vacante/{id}`, `GET` de perfiles publicos y fotos publicas.
 - Admin: gestion de roles, listado global de usuarios y administracion global de suscripciones.
-- Estudiante: solo puede modificar su propio perfil, CV, foto, swipes y postulaciones web.
+- Estudiante: solo puede modificar su propio perfil, CV, foto, historial de vistas, swipes y postulaciones web.
 - Empresa: solo puede modificar su propio perfil, foto, vacantes, swipes de empresa, postulaciones y retroalimentacion asociada a sus vacantes.
 - Admin o duenio del recurso: eliminacion de usuario propio y lectura de recursos privados segun corresponda.
 
@@ -145,6 +145,9 @@ Notas:
 | `GET /api/v1/rol/` y `GET /api/v1/rol/{rol_id}` | No | No | No | Si |
 | `POST/PUT/DELETE /api/v1/rol/*` | No | No | No | Si |
 | `GET /api/v1/vacante/` y `GET /api/v1/vacante/{vacante_id}` | Si | Si | Si | Si |
+| `POST /api/v1/vacante/{vacante_id}/view` | No | Si | No | Si |
+| `GET /api/v1/vacante/historial/estudiante/{estudiante_id}` | No | Solo su propio `estudiante_id` | No | Si |
+| `GET /api/v1/vacante/historial/empresa/{empresa_id}` | No | No | Solo su propio `empresa_id` | Si |
 | `POST /api/v1/vacante/{empresa_id}` | No | No | Solo propia empresa | Si |
 | `PUT/DELETE /api/v1/vacante/{vacante_id}` | No | No | Solo vacantes propias | Si |
 | `GET /api/v1/perfil_estudiante/{usuario_id}` | Si | Si | Si | Si |
@@ -168,6 +171,136 @@ Notas:
 | `GET /api/v1/suscripciones/usuario/{usuario_id}` | No | Solo propias | Solo propias | Si |
 | `GET /api/v1/suscripciones/` y `GET /api/v1/suscripciones/{suscripcion_id}` | No | No | No | Si |
 | `POST/PUT/DELETE /api/v1/suscripciones/*` | No | No | No | Si |
+
+## Perfiles y fecha de nacimiento
+
+- `perfil_estudiante.fecha_nacimiento` es obligatoria al crear o actualizar un alumno.
+- `perfil_empresa` no incluye `fecha_nacimiento`.
+- La edad debe calcularse en frontend a partir de la fecha devuelta por la API.
+
+Ejemplo minimo de alta de alumno:
+
+```json
+{
+  "email": "alumno@test.com",
+  "password": "secret123",
+  "rol_id": 2,
+  "perfil_estudiante": {
+    "nombre_completo": "Alumno Demo",
+    "institucion_educativa": "UTT",
+    "nivel_academico": "Licenciatura",
+    "fecha_nacimiento": "2002-09-18"
+  }
+}
+```
+
+## Historial de vacantes
+
+La API ahora separa dos conceptos:
+
+- visualizacion: el alumno abrio o reviso una vacante.
+- swipe: el alumno o la empresa tomo una decision explicita de interes.
+
+Endpoints nuevos:
+
+```text
+POST /api/v1/vacante/{vacante_id}/view
+GET /api/v1/vacante/historial/estudiante/{estudiante_id}
+GET /api/v1/vacante/historial/empresa/{empresa_id}
+```
+
+### Como funciona
+
+Para alumno:
+
+1. El frontend muestra el listado de vacantes.
+2. Cuando el alumno entra al detalle de una vacante, debe llamar `POST /api/v1/vacante/{vacante_id}/view`.
+3. Si el alumno da like o dislike, se sigue usando `POST /api/v1/swipes/{estudiante_id}`.
+4. Para mostrar historial o favoritos vistos, se consulta `GET /api/v1/vacante/historial/estudiante/{estudiante_id}`.
+
+Para empresa:
+
+1. La empresa sigue usando `POST /api/v1/swipes/empresa/{empresa_id}` para expresar interes en alumnos.
+2. Para analitica de sus vacantes, consulta `GET /api/v1/vacante/historial/empresa/{empresa_id}`.
+3. Ese endpoint devuelve por vacante los totales de vistas, alumnos que la vieron, likes de alumnos, likes emitidos por la empresa y matches.
+
+### Uso recomendado en frontend
+
+- No dispares `view` solo por renderizar una card en el listado.
+- Dispara `view` al abrir el detalle real de la vacante.
+- Usa el historial del alumno para construir pantallas como `Vistas recientemente`, `Favoritas` o `Revisadas varias veces`.
+- Usa el historial de empresa como dashboard o tabla de rendimiento por vacante.
+
+### Ejemplos de respuesta
+
+`POST /api/v1/vacante/1/view`
+
+```json
+{
+  "vacante_id": 1,
+  "estudiante_id": 12,
+  "primera_visualizacion": "2026-03-28T18:05:12Z",
+  "ultima_visualizacion": "2026-03-28T18:05:12Z",
+  "total_visualizaciones": 1
+}
+```
+
+`GET /api/v1/vacante/historial/estudiante/12`
+
+```json
+[
+  {
+    "id": 1,
+    "empresa_id": 7,
+    "titulo": "Backend Developer Python",
+    "descripcion": "Desarrollo de APIs con FastAPI",
+    "requisitos": "Conocimientos en SQL y Python",
+    "tipo_contrato": null,
+    "modalidad": "remoto",
+    "ubicacion": "Tijuana, BC",
+    "sueldo_minimo": 15000.0,
+    "sueldo_maximo": 20000.0,
+    "moneda": "MXN",
+    "estado": "activa",
+    "fecha_publicacion": "2026-03-20T14:30:00Z",
+    "primera_visualizacion": "2026-03-28T17:50:00Z",
+    "ultima_visualizacion": "2026-03-28T18:05:12Z",
+    "total_visualizaciones": 3,
+    "le_dio_like": true,
+    "fecha_like": "2026-03-28T18:06:10Z"
+  }
+]
+```
+
+`GET /api/v1/vacante/historial/empresa/7`
+
+```json
+[
+  {
+    "id": 1,
+    "empresa_id": 7,
+    "titulo": "Backend Developer Python",
+    "descripcion": "Desarrollo de APIs con FastAPI",
+    "requisitos": "Conocimientos en SQL y Python",
+    "tipo_contrato": null,
+    "modalidad": "remoto",
+    "ubicacion": "Tijuana, BC",
+    "sueldo_minimo": 15000.0,
+    "sueldo_maximo": 20000.0,
+    "moneda": "MXN",
+    "estado": "activa",
+    "fecha_publicacion": "2026-03-20T14:30:00Z",
+    "total_visualizaciones": 18,
+    "total_estudiantes_que_vieron": 9,
+    "total_likes_estudiantes": 4,
+    "total_likes_empresa": 3,
+    "total_matches": 2,
+    "ultima_visualizacion": "2026-03-28T18:05:12Z",
+    "ultimo_like_estudiante": "2026-03-28T18:06:10Z",
+    "ultimo_like_empresa": "2026-03-28T18:10:45Z"
+  }
+]
+```
 
 ## Despliegue a VPS con Docker
 
