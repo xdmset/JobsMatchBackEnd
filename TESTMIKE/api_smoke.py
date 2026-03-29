@@ -115,6 +115,7 @@ def main() -> int:
                 "/api/v1/user/",
                 "/api/v1/perfil_estudiante/{usuario_id}",
                 "/api/v1/perfil_empresa/{user_id}",
+                "/api/v1/media/estudiantes/{usuario_id}/cv",
                 "/api/v1/vacante/{empresa_id}",
                 "/api/v1/postulaciones/empresa/{empresa_id}",
                 "/api/v1/retroalimentacion/postulacion/{postulacion_id}",

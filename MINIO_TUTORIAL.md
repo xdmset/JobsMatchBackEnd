@@ -124,6 +124,7 @@ Esto agrega columnas para guardar:
 - `POST /api/v1/media/empresas/{usuario_id}/foto`
 - `GET /api/v1/media/empresas/{usuario_id}/foto`
 - `DELETE /api/v1/media/empresas/{usuario_id}/foto`
+- `GET /api/v1/media/estudiantes/{usuario_id}/cv`
 
 ## 7. Ejemplos con curl
 

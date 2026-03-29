@@ -129,7 +129,7 @@ Reglas de acceso:
 
 Notas:
 
-- `GET /api/v1/media/estudiantes/{usuario_id}/cv` requiere autenticacion del propio estudiante o admin.
+- `GET /api/v1/media/estudiantes/{usuario_id}/cv` requiere autenticacion del propio estudiante, empresa o admin.
 - `POST /api/v1/auth/jwt/logout` es stateless: el cliente debe descartar ambos tokens.
 
 ## Matriz de acceso por rol
@@ -153,7 +153,8 @@ Notas:
 | `POST/PUT/DELETE /api/v1/perfil_empresa/{user_id}` | No | No | Solo propio perfil | Si |
 | `GET /api/v1/media/estudiantes/{usuario_id}/foto` | Si | Si | Si | Si |
 | `POST/DELETE /api/v1/media/estudiantes/{usuario_id}/foto` | No | Solo propio recurso | No | Si |
-| `POST/GET/DELETE /api/v1/media/estudiantes/{usuario_id}/cv` | No | Solo propio recurso | No | Si |
+| `GET /api/v1/media/estudiantes/{usuario_id}/cv` | No | Solo propio recurso | Si | Si |
+| `POST/DELETE /api/v1/media/estudiantes/{usuario_id}/cv` | No | Solo propio recurso | No | Si |
 | `GET /api/v1/media/empresas/{usuario_id}/foto` | Si | Si | Si | Si |
 | `POST/DELETE /api/v1/media/empresas/{usuario_id}/foto` | No | No | Solo propio recurso | Si |
 | `POST /api/v1/swipes/{estudiante_id}` | No | Solo su propio `estudiante_id` | No | Si |
