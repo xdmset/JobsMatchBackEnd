@@ -252,6 +252,8 @@ DATABASE_URL=mysql+pymysql://jobmatch:change-me@mysql:3306/jobmatch_db
 SECRET_KEY=replace-with-a-32-byte-secret
 REFRESH_TOKEN_SECRET=replace-with-another-32-byte-secret
 CORS_ORIGINS=https://api.tudominio.com,https://app.tudominio.com
+MINIO_ENDPOINT=minio:9000
+MINIO_PUBLIC_ENDPOINT=https://files.tudominio.com
 ```
 
 ### Operacion

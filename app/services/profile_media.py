@@ -23,6 +23,7 @@ def serialize_estudiante_profile(estudiante: Any) -> dict[str, Any]:
         "nivel_academico": estudiante.nivel_academico,
         "biografia": estudiante.biografia,
         "habilidades": estudiante.habilidades,
+        "fecha_nacimiento": estudiante.fecha_nacimiento,
         "ubicacion": estudiante.ubicacion,
         "modalidad_preferida": estudiante.modalidad_preferida,
         "cv_tipo_archivo": estudiante.cv_tipo_archivo,

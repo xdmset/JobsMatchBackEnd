@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey, Enum, Date
 from sqlalchemy.orm import relationship
 from app.db.base_class import Base
 
@@ -16,6 +16,7 @@ class PerfilEstudiante(Base):
     cv_tipo_archivo = Column(String(255))
     foto_perfil_url = Column(String(255))
     foto_perfil_storage_key = Column(String(512))
+    fecha_nacimiento = Column(Date, nullable=True)
     ubicacion = Column(String(255))
     modalidad_preferida = Column(Enum('remoto', 'presencial', 'hibrido', name='modalidad_estudiante'))
 

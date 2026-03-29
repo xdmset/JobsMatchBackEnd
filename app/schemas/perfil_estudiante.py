@@ -1,3 +1,5 @@
+from datetime import date
+
 from pydantic import BaseModel
 from typing import Optional, Any
 
@@ -11,10 +13,11 @@ class PerfilEstudianteBase(BaseModel):
     modalidad_preferida: Optional[str] = None
 
 class PerfilEstudianteCreate(PerfilEstudianteBase):
-    pass
+    fecha_nacimiento: date
 
 class PerfilEstudiante(PerfilEstudianteBase):
     usuario_id: int  # Modificado: de user_id a usuario_id
+    fecha_nacimiento: Optional[date] = None
     cv_url: Optional[str] = None
     cv_tipo_archivo: Optional[str] = None
     foto_perfil_url: Optional[str] = None

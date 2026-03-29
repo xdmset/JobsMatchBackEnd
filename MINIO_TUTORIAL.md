@@ -176,14 +176,15 @@ Dentro del contenedor, la API debe usar `mysql` como hostname, no `localhost`.
 
 Este proyecto ya quedo configurado para eso.
 
-### La URL firmada apunta a un host incorrecto
+### La URL firmada apunta a un host o esquema incorrecto
 
 Ajusta `MINIO_PUBLIC_ENDPOINT`.
 
 Ejemplo:
 
 - API en Docker: `MINIO_ENDPOINT=minio:9000`
-- Navegador local: `MINIO_PUBLIC_ENDPOINT=localhost:9000`
+- Navegador local: `MINIO_PUBLIC_ENDPOINT=http://localhost:9000`
+- VPS con HTTPS: `MINIO_PUBLIC_ENDPOINT=https://files.tudominio.com`
 
 ### Error por bucket inexistente
 
