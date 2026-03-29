@@ -6,6 +6,7 @@ from app.models.perfil_empresa import PerfilEmpresa
 from app.models.vacante import Vacante
 from app.models.interaccion_swipe import InteraccionSwipe
 from app.models.interaccion_swipe_empresa import InteraccionSwipeEmpresa
+from app.models.vacante_visualizacion import VacanteVisualizacion
 from app.models.match import Match
 from app.models.postulacion import Postulacion
 from app.models.retroalimentacion import Retroalimentacion

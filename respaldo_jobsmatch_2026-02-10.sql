@@ -23,7 +23,7 @@ CREATE TABLE `alembic_version` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 LOCK TABLES `alembic_version` WRITE;
-INSERT INTO `alembic_version` VALUES ('c4a9b5f1d2e3');
+INSERT INTO `alembic_version` VALUES ('d2f6e7a1c9ab');
 UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `roles`;
@@ -127,6 +127,7 @@ CREATE TABLE `perfiles_estudiantes` (
   `cv_tipo_archivo` varchar(255) DEFAULT NULL,
   `foto_perfil_url` varchar(255) DEFAULT NULL,
   `foto_perfil_storage_key` varchar(512) DEFAULT NULL,
+  `fecha_nacimiento` date DEFAULT NULL,
   `ubicacion` varchar(255) DEFAULT NULL,
   `modalidad_preferida` enum('remoto','presencial','hibrido') DEFAULT NULL,
   PRIMARY KEY (`usuario_id`),
@@ -135,16 +136,16 @@ CREATE TABLE `perfiles_estudiantes` (
 
 LOCK TABLES `perfiles_estudiantes` WRITE;
 INSERT INTO `perfiles_estudiantes` VALUES
-(1,'Leonel Test','UTT','TSU','Desarrollador Backend Jr.','{\"python\": \"avanzado\", \"fastapi\": \"intermedio\"}',NULL,NULL,NULL,NULL,NULL,'Tijuana','remoto'),
-(4,'Maria Lopez','UABC','Licenciatura','Estudiante de sistemas','{\"java\": \"intermedio\"}',NULL,NULL,NULL,NULL,NULL,'Mexicali','presencial'),
-(5,'Carlos Ruiz','ITT','Ingenieria','Apasionado por datos','{\"sql\": \"intermedio\", \"python\": \"basico\"}',NULL,NULL,NULL,NULL,NULL,'Tijuana','hibrido'),
-(6,'Ana Perez','UPBC','TSU','Frontend trainee','{\"react\": \"basico\", \"css\": \"intermedio\"}',NULL,NULL,NULL,NULL,NULL,'Ensenada','remoto'),
-(7,'Luis Gomez','UABC','Licenciatura','QA junior','{\"testing\": \"intermedio\"}',NULL,NULL,NULL,NULL,NULL,'Tijuana','presencial'),
-(8,'Sofia Diaz','CETYS','Ingenieria','Mobile dev','{\"kotlin\": \"basico\"}',NULL,NULL,NULL,NULL,NULL,'Mexicali','hibrido'),
-(9,'Diego Torres','UTT','TSU','Backend trainee','{\"node\": \"basico\", \"express\": \"basico\"}',NULL,NULL,NULL,NULL,NULL,'Tijuana','remoto'),
-(10,'Valeria Mora','UABC','Licenciatura','UX/UI junior','{\"figma\": \"intermedio\"}',NULL,NULL,NULL,NULL,NULL,'Ensenada','presencial'),
-(11,'Jorge Neri','ITT','Ingenieria','DevOps junior','{\"linux\": \"intermedio\", \"docker\": \"basico\"}',NULL,NULL,NULL,NULL,NULL,'Tijuana','hibrido'),
-(12,'Fernanda Cruz','UPBC','TSU','Data analyst','{\"excel\": \"avanzado\", \"powerbi\": \"basico\"}',NULL,NULL,NULL,NULL,NULL,'Mexicali','remoto');
+(1,'Leonel Test','UTT','TSU','Desarrollador Backend Jr.','{\"python\": \"avanzado\", \"fastapi\": \"intermedio\"}',NULL,NULL,NULL,NULL,NULL,'2002-09-18','Tijuana','remoto'),
+(4,'Maria Lopez','UABC','Licenciatura','Estudiante de sistemas','{\"java\": \"intermedio\"}',NULL,NULL,NULL,NULL,NULL,'2001-03-12','Mexicali','presencial'),
+(5,'Carlos Ruiz','ITT','Ingenieria','Apasionado por datos','{\"sql\": \"intermedio\", \"python\": \"basico\"}',NULL,NULL,NULL,NULL,NULL,'2000-07-25','Tijuana','hibrido'),
+(6,'Ana Perez','UPBC','TSU','Frontend trainee','{\"react\": \"basico\", \"css\": \"intermedio\"}',NULL,NULL,NULL,NULL,NULL,'2003-01-09','Ensenada','remoto'),
+(7,'Luis Gomez','UABC','Licenciatura','QA junior','{\"testing\": \"intermedio\"}',NULL,NULL,NULL,NULL,NULL,'2001-11-30','Tijuana','presencial'),
+(8,'Sofia Diaz','CETYS','Ingenieria','Mobile dev','{\"kotlin\": \"basico\"}',NULL,NULL,NULL,NULL,NULL,'2002-05-18','Mexicali','hibrido'),
+(9,'Diego Torres','UTT','TSU','Backend trainee','{\"node\": \"basico\", \"express\": \"basico\"}',NULL,NULL,NULL,NULL,NULL,'2003-08-14','Tijuana','remoto'),
+(10,'Valeria Mora','UABC','Licenciatura','UX/UI junior','{\"figma\": \"intermedio\"}',NULL,NULL,NULL,NULL,NULL,'2001-09-22','Ensenada','presencial'),
+(11,'Jorge Neri','ITT','Ingenieria','DevOps junior','{\"linux\": \"intermedio\", \"docker\": \"basico\"}',NULL,NULL,NULL,NULL,NULL,'2000-12-03','Tijuana','hibrido'),
+(12,'Fernanda Cruz','UPBC','TSU','Data analyst','{\"excel\": \"avanzado\", \"powerbi\": \"basico\"}',NULL,NULL,NULL,NULL,NULL,'2002-02-27','Mexicali','remoto');
 UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `vacantes`;
@@ -241,6 +242,27 @@ CREATE TABLE `interacciones_swipe` (
 LOCK TABLES `interacciones_swipe` WRITE;
 INSERT INTO `interacciones_swipe` VALUES
 (1,1,1,1,'2026-02-09 19:07:39');
+UNLOCK TABLES;
+
+DROP TABLE IF EXISTS `vacantes_visualizaciones`;
+CREATE TABLE `vacantes_visualizaciones` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `estudiante_id` int(11) NOT NULL,
+  `vacante_id` int(11) NOT NULL,
+  `primera_visualizacion` datetime NOT NULL DEFAULT current_timestamp(),
+  `ultima_visualizacion` datetime NOT NULL DEFAULT current_timestamp(),
+  `total_visualizaciones` int(11) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_visualizacion_estudiante_vacante` (`estudiante_id`,`vacante_id`),
+  KEY `ix_vacantes_visualizaciones_id` (`id`),
+  KEY `vacante_visualizacion_vacante_id` (`vacante_id`),
+  CONSTRAINT `vacantes_visualizaciones_ibfk_1` FOREIGN KEY (`estudiante_id`) REFERENCES `perfiles_estudiantes` (`usuario_id`),
+  CONSTRAINT `vacantes_visualizaciones_ibfk_2` FOREIGN KEY (`vacante_id`) REFERENCES `vacantes` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+
+LOCK TABLES `vacantes_visualizaciones` WRITE;
+INSERT INTO `vacantes_visualizaciones` VALUES
+(1,1,1,'2026-02-09 19:07:35','2026-02-09 19:07:39',2);
 UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `interacciones_swipe_empresa`;

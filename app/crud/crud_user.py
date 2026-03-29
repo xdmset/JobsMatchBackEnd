@@ -8,6 +8,7 @@ from app.models.postulacion import Postulacion
 from app.models.retroalimentacion import Retroalimentacion
 from app.models.user import User
 from app.models.vacante import Vacante
+from app.models.vacante_visualizacion import VacanteVisualizacion
 from app.schemas.user import UserCreate
 from app.services.subscription_service import create_default_subscription_for_user
 from app.services.user_registration import create_profile_for_user
@@ -68,6 +69,9 @@ def delete_user(db: Session, user_id: int):
         ).delete(synchronize_session=False)
 
         if vacante_ids:
+            db.query(VacanteVisualizacion).filter(
+                VacanteVisualizacion.vacante_id.in_(vacante_ids)
+            ).delete(synchronize_session=False)
             db.query(InteraccionSwipe).filter(
                 InteraccionSwipe.vacante_id.in_(vacante_ids)
             ).delete(synchronize_session=False)
@@ -81,6 +85,9 @@ def delete_user(db: Session, user_id: int):
                 Vacante.id.in_(vacante_ids)
             ).delete(synchronize_session=False)
 
+        db.query(VacanteVisualizacion).filter(
+            VacanteVisualizacion.estudiante_id == user_id
+        ).delete(synchronize_session=False)
         db.query(InteraccionSwipe).filter(
             InteraccionSwipe.estudiante_id == user_id
         ).delete(synchronize_session=False)

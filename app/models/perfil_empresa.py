@@ -13,6 +13,5 @@ class PerfilEmpresa(Base):
     ubicacion_sede = Column(String(255))
     foto_perfil_url = Column(String(255))
     foto_perfil_storage_key = Column(String(512))
-
     user = relationship("User", back_populates="perfil_empresa")
     vacantes = relationship("Vacante", back_populates="empresa")
