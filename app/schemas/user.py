@@ -32,6 +32,11 @@ class UserMe(User):
     perfil_estudiante: Optional[PerfilEstudiante] = None
     perfil_empresa: Optional[PerfilEmpresa] = None
 
+
+class PremiumSyncResponse(BaseModel):
+    updated_users: int
+
+
 class PasswordChange(BaseModel):
     current_password: str
     new_password: str

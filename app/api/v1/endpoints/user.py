@@ -7,8 +7,9 @@ from app.core.security import get_password_hash, verify_password
 from app.crud.crud_user import create_user, delete_user, get_user_by_email, get_users
 from app.db.session import get_db
 from app.models.user import User as UserModel
-from app.schemas.user import PasswordChange, User, UserCreate, UserMe
+from app.schemas.user import PasswordChange, PremiumSyncResponse, User, UserCreate, UserMe
 from app.services.profile_media import serialize_empresa_profile, serialize_estudiante_profile
+from app.services.subscription_service import sync_all_users_premium_status, sync_user_premium_status
 from app.services.user_registration import validate_role_profile_payload
 
 router = APIRouter()
@@ -32,6 +33,10 @@ def read_me(
     user = db.query(UserModel).filter(UserModel.id == current_user.id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    sync_user_premium_status(db, user.id)
+    db.commit()
+    db.refresh(user)
 
     perfil_estudiante = (
         serialize_estudiante_profile(user.perfil_estudiante) if user.perfil_estudiante else None
@@ -62,6 +67,17 @@ def create_new_user(user: UserCreate, db: Session = Depends(get_db)):
     validate_role_profile_payload(user)
     hashed_password = get_password_hash(user.password)
     return create_user(db, user, hashed_password)
+
+
+@router.post("/premium/sync", response_model=PremiumSyncResponse)
+def sync_premium_flags(
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
+):
+    ensure_roles(current_user, NombreRol.admin.value)
+    updated_users = sync_all_users_premium_status(db)
+    db.commit()
+    return PremiumSyncResponse(updated_users=updated_users)
 
 
 @router.post("/me/password")

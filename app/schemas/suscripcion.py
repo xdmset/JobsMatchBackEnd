@@ -33,3 +33,13 @@ class Suscripcion(SuscripcionBase):
 
     class Config:
         from_attributes = True
+
+
+class SuscripcionActual(BaseModel):
+    usuario_id: int
+    tipo_plan_actual: TipoPlanSuscripcion
+    es_premium: bool
+    suscripcion: Optional[Suscripcion] = None
+
+    class Config:
+        from_attributes = True

@@ -23,6 +23,19 @@ class Settings(BaseSettings):
     max_image_upload_bytes: int = 5 * 1024 * 1024
     max_document_upload_bytes: int = 10 * 1024 * 1024
 
+    PAYPAL_CLIENT_ID: str = ""
+    PAYPAL_SECRET: str = ""
+    PAYPAL_BASE_URL: str = "https://api-m.sandbox.paypal.com"
+    PAYPAL_WEBHOOK_ID: str = ""
+    PAYPAL_WEB_RETURN_URL: str = "http://localhost:3000/payments/paypal/success"
+    PAYPAL_WEB_CANCEL_URL: str = "http://localhost:3000/payments/paypal/cancel"
+    PAYPAL_CURRENCY: str = "USD"
+    PAYPAL_PRODUCT_NAME: str = "JOBMATCH Premium"
+    PAYPAL_PRODUCT_DESCRIPTION: str = "Suscripciones premium de JOBMATCH"
+    PAYPAL_MONTHLY_PRICE: float = 9.99
+    PAYPAL_SEMIANNUAL_PRICE: float = 49.99
+    PAYPAL_ANNUAL_PRICE: float = 89.99
+
     class Config:
         env_file = ".env"
 
