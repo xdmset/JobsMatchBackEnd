@@ -23,7 +23,7 @@ CREATE TABLE `alembic_version` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 LOCK TABLES `alembic_version` WRITE;
-INSERT INTO `alembic_version` VALUES ('d2f6e7a1c9ab');
+INSERT INTO `alembic_version` VALUES ('f1c2d3e4b5a6');
 UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `roles`;
@@ -355,37 +355,67 @@ CREATE TABLE `suscripciones` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `usuario_id` int(11) NOT NULL,
   `tipo_plan` enum('free','premium') NOT NULL,
+  `origen_pago` enum('manual','paypal') NOT NULL DEFAULT 'manual',
   `fecha_inicio` date DEFAULT NULL,
   `fecha_fin` date DEFAULT NULL,
+  `paypal_plan_id` varchar(64) DEFAULT NULL,
+  `paypal_subscription_id` varchar(64) DEFAULT NULL,
+  `estado_externo` varchar(64) DEFAULT NULL,
+  `moneda` varchar(3) DEFAULT NULL,
+  `monto` decimal(10,2) DEFAULT NULL,
+  `detalle_externo` text DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `ix_suscripciones_id` (`id`),
+  UNIQUE KEY `ix_suscripciones_paypal_subscription_id` (`paypal_subscription_id`),
   KEY `usuario_id` (`usuario_id`),
   CONSTRAINT `suscripciones_ibfk_1` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 LOCK TABLES `suscripciones` WRITE;
 INSERT INTO `suscripciones` VALUES
-(1,1,'free','2026-02-09',NULL),
-(2,2,'premium','2026-02-09',NULL),
-(3,3,'premium','2026-02-10',NULL),
-(4,4,'free','2026-02-10',NULL),
-(5,5,'free','2026-02-10',NULL),
-(6,6,'free','2026-02-10',NULL),
-(7,7,'free','2026-02-10',NULL),
-(8,8,'free','2026-02-10',NULL),
-(9,9,'free','2026-02-10',NULL),
-(10,10,'free','2026-02-10',NULL),
-(11,11,'free','2026-02-10',NULL),
-(12,12,'free','2026-02-10',NULL),
-(13,13,'free','2026-02-10',NULL),
-(14,14,'free','2026-02-10',NULL),
-(15,15,'free','2026-02-10',NULL),
-(16,16,'free','2026-02-10',NULL),
-(17,17,'free','2026-02-10',NULL),
-(18,18,'free','2026-02-10',NULL),
-(19,19,'free','2026-02-10',NULL),
-(20,20,'free','2026-02-10',NULL),
-(21,21,'free','2026-02-10',NULL);
+(1,1,'free','manual','2026-02-09',NULL,NULL,NULL,NULL,NULL,NULL),
+(2,2,'premium','manual','2026-02-09',NULL,NULL,NULL,NULL,NULL,NULL),
+(3,3,'premium','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
+(4,4,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
+(5,5,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
+(6,6,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
+(7,7,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
+(8,8,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
+(9,9,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
+(10,10,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
+(11,11,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
+(12,12,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
+(13,13,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
+(14,14,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
+(15,15,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
+(16,16,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
+(17,17,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
+(18,18,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
+(19,19,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
+(20,20,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
+(21,21,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL);
+UNLOCK TABLES;
+
+DROP TABLE IF EXISTS `planes`;
+CREATE TABLE `planes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `codigo` enum('mensual','semestral','anual') NOT NULL,
+  `nombre` varchar(100) NOT NULL,
+  `paypal_product_id` varchar(64) NOT NULL,
+  `paypal_plan_id` varchar(64) NOT NULL,
+  `moneda` varchar(3) NOT NULL,
+  `precio` decimal(10,2) NOT NULL,
+  `intervalo_unidad` varchar(16) NOT NULL,
+  `intervalo_conteo` int(11) NOT NULL,
+  `activo` tinyint(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `codigo` (`codigo`),
+  UNIQUE KEY `paypal_plan_id` (`paypal_plan_id`),
+  KEY `ix_planes_id` (`id`),
+  KEY `ix_planes_paypal_plan_id` (`paypal_plan_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+
+LOCK TABLES `planes` WRITE;
 UNLOCK TABLES;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

@@ -8,6 +8,7 @@ from app.models.interaccion_swipe import InteraccionSwipe
 from app.models.interaccion_swipe_empresa import InteraccionSwipeEmpresa
 from app.models.vacante_visualizacion import VacanteVisualizacion
 from app.models.match import Match
+from app.models.plan import Plan
 from app.models.postulacion import Postulacion
 from app.models.retroalimentacion import Retroalimentacion
 from app.models.suscripcion import Suscripcion

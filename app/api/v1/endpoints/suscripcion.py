@@ -16,7 +16,8 @@ from app.crud.crud_suscripcion import (
 )
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.suscripcion import Suscripcion, SuscripcionCreate, SuscripcionUpdate
+from app.schemas.suscripcion import Suscripcion, SuscripcionActual, SuscripcionCreate, SuscripcionUpdate
+from app.services.subscription_service import get_current_subscription
 
 router = APIRouter()
 
@@ -42,6 +43,29 @@ def read_suscripciones_by_usuario(
     if not get_user(db, usuario_id):
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     return get_suscripciones_by_usuario(db, usuario_id)
+
+
+@router.get("/usuario/{usuario_id}/actual", response_model=SuscripcionActual)
+def read_current_suscripcion_by_usuario(
+    usuario_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ensure_same_user(current_user, usuario_id)
+    user = get_user(db, usuario_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    suscripcion_actual = get_current_subscription(db, usuario_id)
+    if not suscripcion_actual:
+        raise HTTPException(status_code=404, detail="Suscripcion no encontrada")
+
+    return SuscripcionActual(
+        usuario_id=usuario_id,
+        tipo_plan_actual=suscripcion_actual.tipo_plan,
+        es_premium=user.es_premium,
+        suscripcion=suscripcion_actual,
+    )
 
 
 @router.get("/{suscripcion_id}", response_model=Suscripcion)
