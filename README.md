@@ -83,6 +83,57 @@ REFRESH_TOKEN_SECRET=super-secret-refresh
 REFRESH_TOKEN_EXPIRE_DAYS=7
 ```
 
+Variables de entorno para PayPal Subscriptions:
+
+```env
+PAYPAL_CLIENT_ID=tu_client_id
+PAYPAL_SECRET=tu_secret
+PAYPAL_BASE_URL=https://api-m.sandbox.paypal.com
+PAYPAL_WEBHOOK_ID=tu_webhook_id
+PAYPAL_WEB_RETURN_URL=http://localhost:3000/payments/paypal/success
+PAYPAL_WEB_CANCEL_URL=http://localhost:3000/payments/paypal/cancel
+PAYPAL_CURRENCY=MXN
+PAYPAL_MONTHLY_PRICE=199.00
+PAYPAL_SEMIANNUAL_PRICE=999.00
+PAYPAL_ANNUAL_PRICE=1799.00
+```
+
+Modelo de suscripciones:
+
+- Cada usuario nuevo recibe automaticamente una suscripcion `free`.
+- Las suscripciones `premium` de PayPal se guardan como registros separados para conservar historial.
+- `usuarios.es_premium` se sincroniza desde las suscripciones activas.
+- `GET /api/v1/user/me` recalcula `es_premium` antes de responder.
+- `POST /api/v1/user/premium/sync` permite a un admin resincronizar todos los usuarios.
+
+Flujo recomendado para PayPal Subscriptions:
+
+1. Ejecuta `POST /api/v1/payments/paypal/bootstrap` con un admin para crear el producto y los planes mensual, semestral y anual en PayPal.
+2. El frontend consulta `GET /api/v1/payments/paypal/plans`.
+3. El usuario autenticado inicia su alta con `POST /api/v1/payments/paypal/subscriptions`.
+4. El frontend redirige al `approve_url` devuelto por PayPal.
+5. Al volver a tu frontend, llama `POST /api/v1/payments/paypal/subscriptions/{paypal_subscription_id}/sync`.
+6. Configura el webhook de PayPal apuntando a `POST /api/v1/payments/paypal/webhook`.
+
+El endpoint `POST /api/v1/payments/paypal/subscriptions` acepta `return_url` y `cancel_url`, lo que permite usar el mismo backend para:
+
+- Web: `https://jobmatch.com.mx/payments/paypal/success`
+- Flutter: `https://jobmatch.com.mx/payments/paypal/mobile-success` o una ruta que redirija a deep link/app link
+
+Ejemplo de creacion de suscripcion:
+
+```json
+{
+  "plan_code": "mensual",
+  "return_url": "https://jobmatch.com.mx/payments/paypal/success",
+  "cancel_url": "https://jobmatch.com.mx/payments/paypal/cancel"
+}
+```
+
+Guia de implementacion frontend:
+
+- React y Flutter: [PAYPAL_REACT_FLUTTER_GUIDE.md]
+
 Flujo de autenticacion:
 
 ```text
@@ -141,6 +192,8 @@ Notas:
 | `POST /api/v1/auth/jwt/logout` | No | Si | Si | Si |
 | `POST /api/v1/user/` | Si | Si | Si | Si |
 | `GET /api/v1/user/` | No | No | No | Si |
+| `GET /api/v1/user/me` | No | Si | Si | Si |
+| `POST /api/v1/user/premium/sync` | No | No | No | Si |
 | `DELETE /api/v1/user/{user_id}` | No | Solo propio usuario | Solo propio usuario | Si |
 | `GET /api/v1/rol/` y `GET /api/v1/rol/{rol_id}` | No | No | No | Si |
 | `POST/PUT/DELETE /api/v1/rol/*` | No | No | No | Si |
@@ -169,8 +222,15 @@ Notas:
 | `GET /api/v1/retroalimentacion/postulacion/{postulacion_id}` | No | Solo si pertenece a su postulacion | Solo si pertenece a su empresa | Si |
 | `POST/PUT/DELETE /api/v1/retroalimentacion/*` | No | No | Solo sobre postulaciones de su empresa | Si |
 | `GET /api/v1/suscripciones/usuario/{usuario_id}` | No | Solo propias | Solo propias | Si |
+| `GET /api/v1/suscripciones/usuario/{usuario_id}/actual` | No | Solo propia | Solo propia | Si |
 | `GET /api/v1/suscripciones/` y `GET /api/v1/suscripciones/{suscripcion_id}` | No | No | No | Si |
 | `POST/PUT/DELETE /api/v1/suscripciones/*` | No | No | No | Si |
+| `GET /api/v1/payments/paypal/plans` | Si | Si | Si | Si |
+| `POST /api/v1/payments/paypal/bootstrap` | No | No | No | Si |
+| `POST /api/v1/payments/paypal/subscriptions` | No | Si | Si | Si |
+| `POST /api/v1/payments/paypal/subscriptions/{paypal_subscription_id}/sync` | No | Solo propia | Solo propia | Si |
+| `POST /api/v1/payments/paypal/subscriptions/{paypal_subscription_id}/cancel` | No | Solo propia | Solo propia | Si |
+| `POST /api/v1/payments/paypal/webhook` | Si | Si | Si | Si |
 
 ## Perfiles y fecha de nacimiento
 
@@ -378,6 +438,16 @@ Notas:
 - `REFRESH_TOKEN_SECRET`
 - `CORS_ORIGINS`
 - `MINIO_*`
+- `PAYPAL_CLIENT_ID`
+- `PAYPAL_SECRET`
+- `PAYPAL_BASE_URL`
+- `PAYPAL_WEBHOOK_ID`
+- `PAYPAL_WEB_RETURN_URL`
+- `PAYPAL_WEB_CANCEL_URL`
+- `PAYPAL_CURRENCY`
+- `PAYPAL_MONTHLY_PRICE`
+- `PAYPAL_SEMIANNUAL_PRICE`
+- `PAYPAL_ANNUAL_PRICE`
 
 Ejemplo:
 
@@ -388,6 +458,34 @@ REFRESH_TOKEN_SECRET=replace-with-another-32-byte-secret
 CORS_ORIGINS=https://api.tudominio.com,https://app.tudominio.com
 MINIO_ENDPOINT=minio:9000
 MINIO_PUBLIC_ENDPOINT=https://files.tudominio.com
+PAYPAL_BASE_URL=https://api-m.paypal.com
+PAYPAL_WEBHOOK_ID=tu_webhook_id_live
+PAYPAL_CURRENCY=MXN
+PAYPAL_WEB_RETURN_URL=https://jobmatch.com.mx/payments/paypal/success
+PAYPAL_WEB_CANCEL_URL=https://jobmatch.com.mx/payments/paypal/cancel
+```
+
+### Operacion de suscripciones
+
+Bootstrap de planes PayPal:
+
+```bash
+curl -X POST https://api.jobmatch.com.mx/api/v1/payments/paypal/bootstrap \
+  -H "Authorization: Bearer TU_TOKEN_ADMIN"
+```
+
+Sincronizacion global de premium:
+
+```bash
+curl -X POST https://api.jobmatch.com.mx/api/v1/user/premium/sync \
+  -H "Authorization: Bearer TU_TOKEN_ADMIN"
+```
+
+Consulta de plan actual de un usuario:
+
+```bash
+curl https://api.jobmatch.com.mx/api/v1/suscripciones/usuario/123/actual \
+  -H "Authorization: Bearer TU_TOKEN"
 ```
 
 ### Operacion
