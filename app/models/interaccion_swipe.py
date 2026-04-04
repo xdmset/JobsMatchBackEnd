@@ -14,3 +14,4 @@ class InteraccionSwipe(Base):
     vacante_id = Column(Integer, ForeignKey("vacantes.id"), nullable=False)
     interes_estudiante = Column(Boolean, nullable=False)
     fecha = Column(DateTime(timezone=True), server_default=func.now())
+    fecha_actualizacion = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

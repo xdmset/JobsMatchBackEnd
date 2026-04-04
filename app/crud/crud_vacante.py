@@ -136,7 +136,9 @@ def get_historial_vacantes_estudiante(
                 ultima_visualizacion=visualizacion.ultima_visualizacion,
                 total_visualizaciones=visualizacion.total_visualizaciones,
                 le_dio_like=bool(swipe and swipe.interes_estudiante),
-                fecha_like=swipe.fecha if swipe and swipe.interes_estudiante else None,
+                fecha_like=(
+                    swipe.fecha_actualizacion if swipe and swipe.interes_estudiante else None
+                ),
             )
         )
 
@@ -168,7 +170,10 @@ def get_historial_vacantes_empresa(
             ).label("total_likes_estudiantes"),
             func.max(
                 case(
-                    (InteraccionSwipe.interes_estudiante.is_(True), InteraccionSwipe.fecha),
+                    (
+                        InteraccionSwipe.interes_estudiante.is_(True),
+                        InteraccionSwipe.fecha_actualizacion,
+                    ),
                     else_=None,
                 )
             ).label("ultimo_like_estudiante"),
@@ -185,7 +190,10 @@ def get_historial_vacantes_empresa(
             ).label("total_likes_empresa"),
             func.max(
                 case(
-                    (InteraccionSwipeEmpresa.interes_empresa.is_(True), InteraccionSwipeEmpresa.fecha),
+                    (
+                        InteraccionSwipeEmpresa.interes_empresa.is_(True),
+                        InteraccionSwipeEmpresa.fecha_actualizacion,
+                    ),
                     else_=None,
                 )
             ).label("ultimo_like_empresa"),
