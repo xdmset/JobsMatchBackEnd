@@ -6,7 +6,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
-from app.core.dependencies import ensure_roles, ensure_same_user, get_current_user
+from app.core.dependencies import ensure_roles, ensure_same_user, get_current_user, get_user_role
 from app.core.enums import NombreRol
 from app.db.session import get_db
 from app.models.user import User
@@ -25,11 +25,14 @@ from app.services.paypal_service import (
     extract_user_id_from_custom_id,
     get_approval_url,
     get_default_paypal_plan_definitions,
+    get_paypal_plan_definitions_for_role,
     get_effective_end_date,
     parse_paypal_date,
+    build_paypal_plan_code,
 )
 from app.services.subscription_service import (
     create_or_update_paypal_subscription,
+    get_paypal_plans_by_role,
     get_open_paypal_subscription_for_user,
     get_paypal_plan_by_code,
     get_paypal_plan_by_remote_id,
@@ -94,6 +97,16 @@ def list_paypal_plans(db: Session = Depends(get_db)):
     return plans
 
 
+@router.get("/paypal/plans/me", response_model=list[PaypalPlanResponse])
+def list_paypal_plans_for_current_user(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ensure_roles(current_user, NombreRol.estudiante.value, NombreRol.empresa.value)
+    role_scope = get_user_role(current_user)
+    return get_paypal_plans_by_role(db, role_scope)
+
+
 @router.post("/paypal/bootstrap", response_model=PaypalBootstrapResponse)
 def bootstrap_paypal_catalog(
     db: Session = Depends(get_db),
@@ -106,31 +119,48 @@ def bootstrap_paypal_catalog(
         token = client.get_access_token()
         existing = [get_paypal_plan_by_code(db, item.code) for item in get_default_paypal_plan_definitions()]
         existing = [item for item in existing if item is not None]
-        if len(existing) == 3:
-            return PaypalBootstrapResponse(product_id=existing[0].paypal_product_id, plans=existing)
-
-        product = client.create_product(token=token)
-        product_id = product["id"]
-        stored_plans = []
-        for definition in get_default_paypal_plan_definitions():
-            remote_plan = client.create_plan(token=token, product_id=product_id, definition=definition)
-            stored_plans.append(
-                upsert_paypal_plan(
-                    db,
-                    codigo=definition.code,
-                    nombre=definition.name,
-                    paypal_product_id=product_id,
-                    paypal_plan_id=remote_plan["id"],
-                    moneda=remote_plan["billing_cycles"][0]["pricing_scheme"]["fixed_price"]["currency_code"],
-                    precio=definition.price,
-                    intervalo_unidad=definition.interval_unit,
-                    intervalo_conteo=definition.interval_count,
-                )
+        if len(existing) == 6:
+            return PaypalBootstrapResponse(
+                products={
+                    "estudiante": next(item.paypal_product_id for item in existing if item.rol_objetivo == "estudiante"),
+                    "empresa": next(item.paypal_product_id for item in existing if item.rol_objetivo == "empresa"),
+                },
+                plans=existing,
             )
+
+        stored_plans = []
+        products: dict[str, str] = {}
+        for role_scope in (NombreRol.estudiante.value, NombreRol.empresa.value):
+            definitions = get_paypal_plan_definitions_for_role(role_scope)
+            product = client.create_product(
+                token=token,
+                product_name=definitions[0].product_name,
+                product_description=definitions[0].product_description,
+            )
+            product_id = product["id"]
+            products[role_scope] = product_id
+
+            for definition in definitions:
+                remote_plan = client.create_plan(token=token, product_id=product_id, definition=definition)
+                stored_plans.append(
+                    upsert_paypal_plan(
+                        db,
+                        codigo=definition.code,
+                        nombre=definition.name,
+                        rol_objetivo=definition.role_scope,
+                        periodicidad=definition.code.rsplit("_", 1)[-1],
+                        paypal_product_id=product_id,
+                        paypal_plan_id=remote_plan["id"],
+                        moneda=remote_plan["billing_cycles"][0]["pricing_scheme"]["fixed_price"]["currency_code"],
+                        precio=definition.price,
+                        intervalo_unidad=definition.interval_unit,
+                        intervalo_conteo=definition.interval_count,
+                    )
+                )
         db.commit()
         for plan in stored_plans:
             db.refresh(plan)
-        return PaypalBootstrapResponse(product_id=product_id, plans=stored_plans)
+        return PaypalBootstrapResponse(products=products, plans=stored_plans)
     except PaypalServiceError as exc:
         db.rollback()
         raise _translate_paypal_error(exc) from exc
@@ -142,15 +172,18 @@ def create_paypal_subscription(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    ensure_roles(current_user, NombreRol.estudiante.value, NombreRol.empresa.value)
     client = PaypalClient()
-    plan = get_paypal_plan_by_code(db, payload.plan_code.value)
+    role_scope = get_user_role(current_user)
+    plan_code = build_paypal_plan_code(role_scope, payload.billing_cycle.value)
+    plan = get_paypal_plan_by_code(db, plan_code)
     if not plan or not plan.activo:
         raise HTTPException(status_code=404, detail="Plan PayPal no configurado")
-    existing = get_open_paypal_subscription_for_user(db, current_user.id)
+    existing = get_open_paypal_subscription_for_user(db, current_user.id, role_scope=role_scope)
     if existing:
         raise HTTPException(
             status_code=409,
-            detail="El usuario ya tiene una suscripcion PayPal abierta",
+            detail="El usuario ya tiene una suscripcion PayPal abierta para su rol",
         )
 
     try:
@@ -160,7 +193,7 @@ def create_paypal_subscription(
             paypal_plan_id=plan.paypal_plan_id,
             user_id=current_user.id,
             user_email=current_user.email,
-            plan_code=payload.plan_code.value,
+            plan_code=plan_code,
             return_url=str(payload.return_url) if payload.return_url else None,
             cancel_url=str(payload.cancel_url) if payload.cancel_url else None,
         )

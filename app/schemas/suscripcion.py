@@ -13,6 +13,8 @@ class TipoPlanSuscripcion(str, Enum):
 class SuscripcionBase(BaseModel):
     usuario_id: int
     tipo_plan: TipoPlanSuscripcion
+    rol_objetivo: str
+    codigo_plan: Optional[str] = None
     fecha_inicio: Optional[date] = None
     fecha_fin: Optional[date] = None
 

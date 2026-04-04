@@ -12,10 +12,100 @@ from app.db.session import get_db
 from app.models.interaccion_swipe import InteraccionSwipe
 from app.models.interaccion_swipe_empresa import InteraccionSwipeEmpresa
 from app.models.user import User
+from app.schemas.discovery import CandidateFeedItem
 from app.schemas.interaccion_swipe import SwipeCreate, SwipeEmpresaCreate
 from app.schemas.match import MatchResponse
+from app.schemas.vacante import Vacante
+from app.services.profile_media import serialize_estudiante_profile
+from app.services.subscription_service import build_plan_context
 
 router = APIRouter()
+
+
+@router.get("/{estudiante_id}/vacantes", response_model=list[Vacante])
+def get_student_swipe_feed(
+    estudiante_id: int,
+    skip: int = 0,
+    limit: int = 100,
+    modalidad: str | None = None,
+    ubicacion: str | None = None,
+    sueldo_min: float | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ensure_same_user(current_user, estudiante_id, NombreRol.estudiante.value)
+    return crud_swipe.get_vacante_feed_for_student(
+        db,
+        estudiante_id=estudiante_id,
+        skip=skip,
+        limit=limit,
+        modalidad=modalidad,
+        ubicacion=ubicacion,
+        sueldo_min=sueldo_min,
+    )
+
+
+@router.get("/empresa/{empresa_id}/candidatos", response_model=list[CandidateFeedItem])
+def get_company_candidate_feed(
+    empresa_id: int,
+    vacante_id: int,
+    skip: int = 0,
+    limit: int = 100,
+    ubicacion: str | None = None,
+    modalidad_preferida: str | None = None,
+    institucion_educativa: str | None = None,
+    nivel_academico: str | None = None,
+    habilidad: str | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ensure_same_user(current_user, empresa_id, NombreRol.empresa.value)
+    vacante = crud_swipe.get_vacante(db, vacante_id)
+    if not vacante:
+        raise HTTPException(status_code=404, detail="Vacante no encontrada")
+    if vacante.empresa_id != empresa_id:
+        raise HTTPException(status_code=403, detail="La vacante no pertenece a la empresa")
+
+    plan_context = build_plan_context(current_user)
+    if plan_context.candidate_filter_level != "advanced" and any(
+        [institucion_educativa, nivel_academico, habilidad]
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Tu plan actual solo permite filtros básicos sobre candidatos",
+        )
+
+    rows = crud_swipe.get_candidate_feed_for_company(
+        db,
+        empresa_id=empresa_id,
+        vacante_id=vacante_id,
+        skip=skip,
+        limit=limit,
+        ubicacion=ubicacion,
+        modalidad_preferida=modalidad_preferida,
+        institucion_educativa=institucion_educativa,
+        nivel_academico=nivel_academico,
+        habilidad=habilidad,
+    )
+
+    items = []
+    for perfil_estudiante, user, swipe_estudiante in rows:
+        items.append(
+            CandidateFeedItem(
+                usuario_id=user.id,
+                email=user.email,
+                es_premium=bool(user.es_premium),
+                fecha_registro=user.fecha_registro,
+                ya_dio_like=bool(swipe_estudiante and swipe_estudiante.interes_estudiante),
+                fecha_like=(
+                    swipe_estudiante.fecha_actualizacion
+                    if swipe_estudiante and swipe_estudiante.interes_estudiante
+                    else None
+                ),
+                perfil_estudiante=serialize_estudiante_profile(perfil_estudiante),
+            )
+        )
+    return items
 
 @router.post("/{estudiante_id}", response_model=Optional[MatchResponse])
 def registrar_swipe(
@@ -32,14 +122,16 @@ def registrar_swipe(
 
     interaccion_existente = crud_swipe.get_swipe_estudiante(db, estudiante_id, swipe.vacante_id)
 
-    if not usuario.es_premium and not interaccion_existente:
+    plan_context = build_plan_context(usuario)
+
+    if plan_context.daily_swipes_limit is not None and not interaccion_existente:
         hoy = date.today()
         conteo_hoy = db.query(InteraccionSwipe).filter(
             InteraccionSwipe.estudiante_id == estudiante_id,
             func.date(InteraccionSwipe.fecha) == hoy
         ).count()
 
-        if conteo_hoy >= 10:
+        if conteo_hoy >= plan_context.daily_swipes_limit:
             raise HTTPException(status_code=403, detail="Límite de swipes diarios alcanzado. ¡Hazte Premium!")
 
     vacante = crud_swipe.get_vacante(db, swipe.vacante_id)

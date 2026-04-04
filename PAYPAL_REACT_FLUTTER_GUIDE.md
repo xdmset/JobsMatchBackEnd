@@ -8,6 +8,7 @@ Esta guia describe como integrar el flujo de suscripciones PayPal del backend de
 El backend ya expone estos endpoints:
 
 - `GET /api/v1/payments/paypal/plans`
+- `GET /api/v1/payments/paypal/plans/me`
 - `POST /api/v1/payments/paypal/bootstrap`
 - `POST /api/v1/payments/paypal/subscriptions`
 - `POST /api/v1/payments/paypal/subscriptions/{paypal_subscription_id}/sync`
@@ -24,7 +25,8 @@ Antes de tocar React o Flutter:
 2. Ejecuta migraciones.
 3. Registra el webhook de PayPal.
 4. Ejecuta `POST /api/v1/payments/paypal/bootstrap` con un usuario admin.
-5. Verifica que `GET /api/v1/payments/paypal/plans` devuelva mensual, semestral y anual.
+5. Verifica que `GET /api/v1/payments/paypal/plans` devuelva los 6 planes premium.
+6. Verifica que `GET /api/v1/payments/paypal/plans/me` devuelva solo los planes del rol autenticado.
 
 Variables importantes en backend:
 
@@ -54,6 +56,7 @@ Importante:
 
 - No actives premium solo porque PayPal redirigio al cliente.
 - El estado final debe salir de `sync` o del webhook del backend.
+- El cliente solo manda `billing_cycle`; el backend resuelve el plan premium correcto segun el rol autenticado.
 
 ## 3. React Web
 
@@ -68,7 +71,7 @@ Usa rutas web como estas:
 
 ```ts
 export async function getPaypalPlans(token: string) {
-  const response = await fetch("https://api.jobmatch.com.mx/api/v1/payments/paypal/plans", {
+  const response = await fetch("https://api.jobmatch.com.mx/api/v1/payments/paypal/plans/me", {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -85,9 +88,9 @@ export async function getPaypalPlans(token: string) {
 ### 3.3 Crear suscripcion
 
 ```ts
-type PlanCode = "mensual" | "semestral" | "anual";
+type BillingCycle = "mensual" | "semestral" | "anual";
 
-export async function createPaypalSubscription(token: string, planCode: PlanCode) {
+export async function createPaypalSubscription(token: string, billingCycle: BillingCycle) {
   const response = await fetch("https://api.jobmatch.com.mx/api/v1/payments/paypal/subscriptions", {
     method: "POST",
     headers: {
@@ -95,7 +98,7 @@ export async function createPaypalSubscription(token: string, planCode: PlanCode
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
-      plan_code: planCode,
+      billing_cycle: billingCycle,
       return_url: "https://jobmatch.com.mx/payments/paypal/success",
       cancel_url: "https://jobmatch.com.mx/payments/paypal/cancel",
     }),
@@ -209,11 +212,11 @@ final dio = Dio(
   ),
 );
 
-Future<Map<String, dynamic>> createPaypalSubscription(String planCode) async {
+Future<Map<String, dynamic>> createPaypalSubscription(String billingCycle) async {
   final response = await dio.post(
     '/payments/paypal/subscriptions',
     data: {
-      'plan_code': planCode,
+      'billing_cycle': billingCycle,
       'return_url': 'https://jobmatch.com.mx/payments/paypal/mobile-success',
       'cancel_url': 'https://jobmatch.com.mx/payments/paypal/mobile-cancel',
     },
@@ -321,6 +324,9 @@ Configura al menos estos eventos en el webhook:
 
 - `es_premium` sigue en `false`:
   Asegurate de llamar `sync` despues del regreso del usuario o de que el webhook este entrando correctamente.
+
+- `GET /plans/me` no devuelve planes:
+  Verifica que el usuario tenga rol `estudiante` o `empresa` y que ya corriste `POST /api/v1/payments/paypal/bootstrap`.
 
 - El webhook no llega:
   Verifica HTTPS, DNS, proxy reverse, Nginx y que la URL apunte al backend, no al frontend.

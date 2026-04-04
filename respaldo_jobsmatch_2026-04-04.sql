@@ -23,7 +23,7 @@ CREATE TABLE `alembic_version` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 LOCK TABLES `alembic_version` WRITE;
-INSERT INTO `alembic_version` VALUES ('a1d4f8b2c3e7');
+INSERT INTO `alembic_version` VALUES ('b3c4d5e6f7a8');
 UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `roles`;
@@ -357,6 +357,8 @@ CREATE TABLE `suscripciones` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `usuario_id` int(11) NOT NULL,
   `tipo_plan` enum('free','premium') NOT NULL,
+  `rol_objetivo` enum('estudiante','empresa') NOT NULL,
+  `codigo_plan` varchar(64) DEFAULT NULL,
   `origen_pago` enum('manual','paypal') NOT NULL DEFAULT 'manual',
   `fecha_inicio` date DEFAULT NULL,
   `fecha_fin` date DEFAULT NULL,
@@ -375,34 +377,36 @@ CREATE TABLE `suscripciones` (
 
 LOCK TABLES `suscripciones` WRITE;
 INSERT INTO `suscripciones` VALUES
-(1,1,'free','manual','2026-02-09',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(2,2,'premium','manual','2026-02-09',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(3,3,'premium','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(4,4,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(5,5,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(6,6,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(7,7,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(8,8,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(9,9,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(10,10,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(11,11,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(12,12,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(13,13,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(14,14,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(15,15,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(16,16,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(17,17,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(18,18,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(19,19,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(20,20,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(21,21,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+(1,1,'free','estudiante','free_estudiante','manual','2026-02-09',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(2,2,'premium','empresa','premium_empresa','manual','2026-02-09',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(3,3,'premium','empresa','premium_empresa','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(4,4,'free','estudiante','free_estudiante','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(5,5,'free','estudiante','free_estudiante','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(6,6,'free','estudiante','free_estudiante','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(7,7,'free','estudiante','free_estudiante','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(8,8,'free','estudiante','free_estudiante','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(9,9,'free','estudiante','free_estudiante','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(10,10,'free','estudiante','free_estudiante','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(11,11,'free','estudiante','free_estudiante','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(12,12,'free','estudiante','free_estudiante','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(13,13,'free','estudiante','free_estudiante','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(14,14,'free','estudiante','free_estudiante','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(15,15,'free','estudiante','free_estudiante','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(16,16,'free','estudiante','free_estudiante','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(17,17,'free','estudiante','free_estudiante','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(18,18,'free','estudiante','free_estudiante','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(19,19,'free','empresa','free_empresa','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(20,20,'free','empresa','free_empresa','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(21,21,'free','empresa','free_empresa','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `planes`;
 CREATE TABLE `planes` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `codigo` enum('mensual','semestral','anual') NOT NULL,
+  `codigo` varchar(64) NOT NULL,
   `nombre` varchar(100) NOT NULL,
+  `rol_objetivo` enum('estudiante','empresa') NOT NULL,
+  `periodicidad` enum('mensual','semestral','anual') NOT NULL,
   `paypal_product_id` varchar(64) NOT NULL,
   `paypal_plan_id` varchar(64) NOT NULL,
   `moneda` varchar(3) NOT NULL,
@@ -429,4 +433,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-03-09 02:00:00
+-- Dump completed on 2026-04-04 18:00:00
