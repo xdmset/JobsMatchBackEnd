@@ -7,12 +7,16 @@ class Plan(Base):
     __tablename__ = "planes"
 
     id = Column(Integer, primary_key=True, index=True)
-    codigo = Column(
-        Enum("mensual", "semestral", "anual", name="codigo_plan_paypal"),
-        unique=True,
+    codigo = Column(String(64), unique=True, nullable=False)
+    nombre = Column(String(100), nullable=False)
+    rol_objetivo = Column(
+        Enum("estudiante", "empresa", name="rol_objetivo_plan"),
         nullable=False,
     )
-    nombre = Column(String(100), nullable=False)
+    periodicidad = Column(
+        Enum("mensual", "semestral", "anual", name="periodicidad_plan_paypal"),
+        nullable=False,
+    )
     paypal_product_id = Column(String(64), nullable=False)
     paypal_plan_id = Column(String(64), unique=True, nullable=False, index=True)
     moneda = Column(String(3), nullable=False)

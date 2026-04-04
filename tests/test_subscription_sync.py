@@ -44,6 +44,8 @@ def test_update_subscription_marks_user_premium_when_legacy_end_date_is_expired(
         subscription = Suscripcion(
             usuario_id=user.id,
             tipo_plan="free",
+            rol_objetivo="estudiante",
+            codigo_plan="free_estudiante",
             fecha_inicio=date.today() - timedelta(days=30),
             fecha_fin=date.today() - timedelta(days=1),
         )
@@ -87,8 +89,10 @@ def test_paypal_pending_subscription_does_not_mark_user_as_premium():
         db.flush()
 
         plan = Plan(
-            codigo="mensual",
-            nombre="Premium Mensual",
+            codigo="premium_estudiante_mensual",
+            nombre="Premium Estudiante Mensual",
+            rol_objetivo="estudiante",
+            periodicidad="mensual",
             paypal_product_id="PROD-123",
             paypal_plan_id="P-123",
             moneda="USD",
@@ -140,8 +144,10 @@ def test_paypal_active_subscription_marks_user_as_premium():
         db.flush()
 
         plan = Plan(
-            codigo="anual",
-            nombre="Premium Anual",
+            codigo="premium_estudiante_anual",
+            nombre="Premium Estudiante Anual",
+            rol_objetivo="estudiante",
+            periodicidad="anual",
             paypal_product_id="PROD-123",
             paypal_plan_id="P-999",
             moneda="USD",
@@ -193,8 +199,10 @@ def test_paypal_cancelled_subscription_keeps_premium_until_end_date():
         db.flush()
 
         plan = Plan(
-            codigo="mensual",
-            nombre="Premium Mensual",
+            codigo="premium_estudiante_mensual",
+            nombre="Premium Estudiante Mensual",
+            rol_objetivo="estudiante",
+            periodicidad="mensual",
             paypal_product_id="PROD-123",
             paypal_plan_id="P-321",
             moneda="USD",
@@ -314,6 +322,8 @@ def test_sync_user_premium_status_turns_off_expired_manual_premium():
             Suscripcion(
                 usuario_id=user.id,
                 tipo_plan="premium",
+                rol_objetivo="estudiante",
+                codigo_plan="premium_estudiante_mensual",
                 fecha_inicio=date.today() - timedelta(days=60),
                 fecha_fin=date.today() - timedelta(days=1),
             )
@@ -359,6 +369,8 @@ def test_sync_all_users_premium_status_returns_number_of_updated_users():
             Suscripcion(
                 usuario_id=expired_user.id,
                 tipo_plan="premium",
+                rol_objetivo="estudiante",
+                codigo_plan="premium_estudiante_mensual",
                 fecha_inicio=date.today() - timedelta(days=30),
                 fecha_fin=date.today() - timedelta(days=1),
             )
@@ -367,6 +379,8 @@ def test_sync_all_users_premium_status_returns_number_of_updated_users():
             Suscripcion(
                 usuario_id=active_user.id,
                 tipo_plan="premium",
+                rol_objetivo="estudiante",
+                codigo_plan="premium_estudiante_mensual",
                 fecha_inicio=date.today() - timedelta(days=1),
                 fecha_fin=date.today() + timedelta(days=30),
             )

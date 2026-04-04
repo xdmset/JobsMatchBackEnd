@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.interaccion_swipe import InteraccionSwipe
 from app.models.interaccion_swipe_empresa import InteraccionSwipeEmpresa
 from app.models.match import Match
+from app.models.user import User
 from app.models.vacante import Vacante
 from app.models.vacante_visualizacion import VacanteVisualizacion
 from app.schemas.vacante import (
@@ -27,7 +28,7 @@ def get_vacantes(
     sueldo_min: float = None
 ):
     """RF-09: Obtener vacantes con filtros dinámicos."""
-    query = db.query(Vacante)
+    query = db.query(Vacante).join(User, User.id == Vacante.empresa_id)
     
     if modalidad:
         query = query.filter(Vacante.modalidad == modalidad)
@@ -36,7 +37,12 @@ def get_vacantes(
     if sueldo_min:
         query = query.filter(Vacante.sueldo_minimo >= sueldo_min)
     
-    return query.offset(skip).limit(limit).all()
+    return (
+        query.order_by(User.es_premium.desc(), Vacante.fecha_publicacion.desc(), Vacante.id.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
 
 def create_vacante(db: Session, vacante: VacanteCreate, empresa_id: int):
     # Se usa model_dump() para Pydantic v2
@@ -45,6 +51,13 @@ def create_vacante(db: Session, vacante: VacanteCreate, empresa_id: int):
     db.commit()
     db.refresh(db_vacante)
     return db_vacante
+
+
+def count_active_vacantes_by_empresa(db: Session, empresa_id: int) -> int:
+    return db.query(Vacante).filter(
+        Vacante.empresa_id == empresa_id,
+        Vacante.estado == "activa",
+    ).count()
 
 def update_vacante(db: Session, vacante_id: int, vacante_data: VacanteUpdate):
     db_vacante = get_vacante(db, vacante_id)

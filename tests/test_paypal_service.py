@@ -6,7 +6,7 @@ from app.services.paypal_service import (
 
 
 def test_extract_user_id_from_custom_id():
-    assert extract_user_id_from_custom_id("user:42|plan:mensual") == 42
+    assert extract_user_id_from_custom_id("user:42|plan:premium_estudiante_mensual") == 42
     assert extract_user_id_from_custom_id("invalid") is None
 
 

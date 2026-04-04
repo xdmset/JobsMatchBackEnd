@@ -1,8 +1,10 @@
 from typing import Optional
 from sqlalchemy.orm import Session
 
+from app.models.perfil_estudiante import PerfilEstudiante
 from app.models.postulacion import Postulacion
 from app.models.retroalimentacion import Retroalimentacion
+from app.models.user import User
 from app.models.vacante import Vacante
 
 
@@ -55,10 +57,33 @@ def crear_postulacion_si_aplica(
     return nueva_postulacion
 
 
-def listar_postulaciones_empresa(db: Session, empresa_id: int):
-    return db.query(Postulacion).filter(
-        Postulacion.empresa_id == empresa_id
-    ).all()
+def listar_postulaciones_empresa(
+    db: Session,
+    empresa_id: int,
+    *,
+    estado: str | None = None,
+    institucion_educativa: str | None = None,
+    nivel_academico: str | None = None,
+    ubicacion: str | None = None,
+):
+    query = db.query(Postulacion).join(
+        PerfilEstudiante,
+        PerfilEstudiante.usuario_id == Postulacion.estudiante_id,
+    ).join(
+        User,
+        User.id == Postulacion.estudiante_id,
+    ).filter(Postulacion.empresa_id == empresa_id)
+
+    if estado:
+        query = query.filter(Postulacion.estado == estado)
+    if institucion_educativa:
+        query = query.filter(PerfilEstudiante.institucion_educativa.contains(institucion_educativa))
+    if nivel_academico:
+        query = query.filter(PerfilEstudiante.nivel_academico.contains(nivel_academico))
+    if ubicacion:
+        query = query.filter(PerfilEstudiante.ubicacion.contains(ubicacion))
+
+    return query.order_by(User.es_premium.desc(), Postulacion.fecha_actualizacion.desc(), Postulacion.id.desc()).all()
 
 
 def actualizar_estado_postulacion(

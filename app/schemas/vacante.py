@@ -1,7 +1,16 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
+
+
+def _validate_salary_range(sueldo_minimo: Optional[float], sueldo_maximo: Optional[float]) -> None:
+    if (
+        sueldo_minimo is not None
+        and sueldo_maximo is not None
+        and sueldo_minimo > sueldo_maximo
+    ):
+        raise ValueError("sueldo_minimo no puede ser mayor que sueldo_maximo")
 
 class VacanteBase(BaseModel):
     titulo: str
@@ -14,6 +23,11 @@ class VacanteBase(BaseModel):
     sueldo_maximo: Optional[float] = None
     moneda: Optional[str] = None
     estado: Optional[str] = None
+
+    @model_validator(mode="after")
+    def validate_salary_range(self):
+        _validate_salary_range(self.sueldo_minimo, self.sueldo_maximo)
+        return self
 
 class VacanteCreate(VacanteBase):
     pass
@@ -30,6 +44,11 @@ class VacanteUpdate(BaseModel):
     sueldo_maximo: Optional[float] = None
     moneda: Optional[str] = None
     estado: Optional[str] = None
+
+    @model_validator(mode="after")
+    def validate_salary_range(self):
+        _validate_salary_range(self.sueldo_minimo, self.sueldo_maximo)
+        return self
 
 class Vacante(VacanteBase):
     id: int

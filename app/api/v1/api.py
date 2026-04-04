@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from app.api.v1.endpoints import (
     auth,
+    matches,
     media,
     payments,
     perfil_empresa,
@@ -23,6 +24,7 @@ api_router.include_router(payments.router, prefix="/payments", tags=["Payments"]
 api_router.include_router(perfil_estudiante.router, prefix="/perfil_estudiante", tags=["Perfil_Estudiante"])
 api_router.include_router(perfil_empresa.router, prefix="/perfil_empresa", tags=["Perfil_Empresa"])
 api_router.include_router(vacante.router, prefix="/vacante", tags=["Vacante"])
+api_router.include_router(matches.router, prefix="/matches", tags=["Matches"])
 api_router.include_router(swipes.router, prefix="/swipes", tags=["Swipes"])
 api_router.include_router(postulaciones.router, prefix="/postulaciones", tags=["Postulaciones"])
 api_router.include_router(suscripcion.router, prefix="/suscripciones", tags=["Suscripciones"])

@@ -22,35 +22,85 @@ class PaypalServiceError(Exception):
 class PaypalPlanDefinition:
     code: str
     name: str
+    role_scope: str
+    product_name: str
+    product_description: str
     price: Decimal
     interval_unit: str
     interval_count: int
 
 
+def build_paypal_plan_code(role_scope: str, billing_cycle: str) -> str:
+    return f"premium_{role_scope}_{billing_cycle}"
+
+
 def get_default_paypal_plan_definitions() -> list[PaypalPlanDefinition]:
     return [
         PaypalPlanDefinition(
-            code="mensual",
-            name="Premium Mensual",
-            price=Decimal(str(settings.PAYPAL_MONTHLY_PRICE)),
+            code=build_paypal_plan_code("estudiante", "mensual"),
+            name="Premium Estudiante Mensual",
+            role_scope="estudiante",
+            product_name=settings.PAYPAL_STUDENT_PRODUCT_NAME,
+            product_description=settings.PAYPAL_STUDENT_PRODUCT_DESCRIPTION,
+            price=Decimal(str(settings.PAYPAL_STUDENT_MONTHLY_PRICE)),
             interval_unit="MONTH",
             interval_count=1,
         ),
         PaypalPlanDefinition(
-            code="semestral",
-            name="Premium Semestral",
-            price=Decimal(str(settings.PAYPAL_SEMIANNUAL_PRICE)),
+            code=build_paypal_plan_code("estudiante", "semestral"),
+            name="Premium Estudiante Semestral",
+            role_scope="estudiante",
+            product_name=settings.PAYPAL_STUDENT_PRODUCT_NAME,
+            product_description=settings.PAYPAL_STUDENT_PRODUCT_DESCRIPTION,
+            price=Decimal(str(settings.PAYPAL_STUDENT_SEMIANNUAL_PRICE)),
             interval_unit="MONTH",
             interval_count=6,
         ),
         PaypalPlanDefinition(
-            code="anual",
-            name="Premium Anual",
-            price=Decimal(str(settings.PAYPAL_ANNUAL_PRICE)),
+            code=build_paypal_plan_code("estudiante", "anual"),
+            name="Premium Estudiante Anual",
+            role_scope="estudiante",
+            product_name=settings.PAYPAL_STUDENT_PRODUCT_NAME,
+            product_description=settings.PAYPAL_STUDENT_PRODUCT_DESCRIPTION,
+            price=Decimal(str(settings.PAYPAL_STUDENT_ANNUAL_PRICE)),
+            interval_unit="MONTH",
+            interval_count=12,
+        ),
+        PaypalPlanDefinition(
+            code=build_paypal_plan_code("empresa", "mensual"),
+            name="Premium Empresa Mensual",
+            role_scope="empresa",
+            product_name=settings.PAYPAL_COMPANY_PRODUCT_NAME,
+            product_description=settings.PAYPAL_COMPANY_PRODUCT_DESCRIPTION,
+            price=Decimal(str(settings.PAYPAL_COMPANY_MONTHLY_PRICE)),
+            interval_unit="MONTH",
+            interval_count=1,
+        ),
+        PaypalPlanDefinition(
+            code=build_paypal_plan_code("empresa", "semestral"),
+            name="Premium Empresa Semestral",
+            role_scope="empresa",
+            product_name=settings.PAYPAL_COMPANY_PRODUCT_NAME,
+            product_description=settings.PAYPAL_COMPANY_PRODUCT_DESCRIPTION,
+            price=Decimal(str(settings.PAYPAL_COMPANY_SEMIANNUAL_PRICE)),
+            interval_unit="MONTH",
+            interval_count=6,
+        ),
+        PaypalPlanDefinition(
+            code=build_paypal_plan_code("empresa", "anual"),
+            name="Premium Empresa Anual",
+            role_scope="empresa",
+            product_name=settings.PAYPAL_COMPANY_PRODUCT_NAME,
+            product_description=settings.PAYPAL_COMPANY_PRODUCT_DESCRIPTION,
+            price=Decimal(str(settings.PAYPAL_COMPANY_ANNUAL_PRICE)),
             interval_unit="MONTH",
             interval_count=12,
         ),
     ]
+
+
+def get_paypal_plan_definitions_for_role(role_scope: str) -> list[PaypalPlanDefinition]:
+    return [item for item in get_default_paypal_plan_definitions() if item.role_scope == role_scope]
 
 
 def parse_paypal_datetime(value: str | None) -> datetime | None:
@@ -174,10 +224,10 @@ class PaypalClient:
             raise PaypalServiceError("PayPal no devolvio un access token")
         return token
 
-    def create_product(self, *, token: str) -> dict[str, Any]:
+    def create_product(self, *, token: str, product_name: str, product_description: str) -> dict[str, Any]:
         payload = {
-            "name": settings.PAYPAL_PRODUCT_NAME,
-            "description": settings.PAYPAL_PRODUCT_DESCRIPTION,
+            "name": product_name,
+            "description": product_description,
             "type": "SERVICE",
             "category": "SOFTWARE",
         }
