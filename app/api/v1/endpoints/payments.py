@@ -11,7 +11,6 @@ from app.core.enums import NombreRol
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.payment import (
-    PaypalBillingCycle,
     PaypalBootstrapResponse,
     PaypalCancelSubscriptionRequest,
     PaypalCreateSubscriptionRequest,
