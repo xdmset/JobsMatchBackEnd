@@ -23,7 +23,7 @@ CREATE TABLE `alembic_version` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 LOCK TABLES `alembic_version` WRITE;
-INSERT INTO `alembic_version` VALUES ('f1c2d3e4b5a6');
+INSERT INTO `alembic_version` VALUES ('a1d4f8b2c3e7');
 UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `roles`;
@@ -231,6 +231,7 @@ CREATE TABLE `interacciones_swipe` (
   `vacante_id` int(11) DEFAULT NULL,
   `interes_estudiante` tinyint(1) DEFAULT NULL,
   `fecha` datetime DEFAULT current_timestamp(),
+  `fecha_actualizacion` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_swipe_estudiante_vacante` (`estudiante_id`,`vacante_id`),
   KEY `vacante_id` (`vacante_id`),
@@ -241,7 +242,7 @@ CREATE TABLE `interacciones_swipe` (
 
 LOCK TABLES `interacciones_swipe` WRITE;
 INSERT INTO `interacciones_swipe` VALUES
-(1,1,1,1,'2026-02-09 19:07:39');
+(1,1,1,1,'2026-02-09 19:07:39','2026-02-09 19:07:39');
 UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `vacantes_visualizaciones`;
@@ -273,6 +274,7 @@ CREATE TABLE `interacciones_swipe_empresa` (
   `vacante_id` int(11) NOT NULL,
   `interes_empresa` tinyint(1) NOT NULL,
   `fecha` datetime DEFAULT current_timestamp(),
+  `fecha_actualizacion` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_swipe_empresa_tripleta` (`empresa_id`,`estudiante_id`,`vacante_id`),
   KEY `ix_interacciones_swipe_empresa_id` (`id`),
@@ -285,7 +287,7 @@ CREATE TABLE `interacciones_swipe_empresa` (
 
 LOCK TABLES `interacciones_swipe_empresa` WRITE;
 INSERT INTO `interacciones_swipe_empresa` VALUES
-(1,2,1,1,1,'2026-02-09 19:07:48');
+(1,2,1,1,1,'2026-02-09 19:07:48','2026-02-09 19:07:48');
 UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `matches`;
@@ -373,27 +375,27 @@ CREATE TABLE `suscripciones` (
 
 LOCK TABLES `suscripciones` WRITE;
 INSERT INTO `suscripciones` VALUES
-(1,1,'free','manual','2026-02-09',NULL,NULL,NULL,NULL,NULL,NULL),
-(2,2,'premium','manual','2026-02-09',NULL,NULL,NULL,NULL,NULL,NULL),
-(3,3,'premium','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
-(4,4,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
-(5,5,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
-(6,6,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
-(7,7,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
-(8,8,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
-(9,9,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
-(10,10,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
-(11,11,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
-(12,12,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
-(13,13,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
-(14,14,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
-(15,15,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
-(16,16,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
-(17,17,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
-(18,18,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
-(19,19,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
-(20,20,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL),
-(21,21,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL);
+(1,1,'free','manual','2026-02-09',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(2,2,'premium','manual','2026-02-09',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(3,3,'premium','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(4,4,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(5,5,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(6,6,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(7,7,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(8,8,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(9,9,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(10,10,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(11,11,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(12,12,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(13,13,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(14,14,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(15,15,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(16,16,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(17,17,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(18,18,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(19,19,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(20,20,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(21,21,'free','manual','2026-02-10',NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `planes`;
