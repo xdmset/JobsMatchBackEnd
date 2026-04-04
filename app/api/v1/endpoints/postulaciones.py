@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import ensure_roles, ensure_same_user, get_current_user
@@ -10,6 +10,7 @@ from app.schemas.postulacion import PostulacionWebCreate, PostulacionRead, Cambi
 from app.models.postulacion import Postulacion
 from app.models.user import User
 from app.crud import crud_postulacion
+from app.services.subscription_service import build_plan_context
 
 router = APIRouter()
 
@@ -50,12 +51,33 @@ def crear_postulacion_web(
 @router.get("/empresa/{empresa_id}", response_model=List[PostulacionRead])
 def listar_postulaciones_empresa(
     empresa_id: int,
+    estado: str | None = Query(None),
+    institucion_educativa: str | None = Query(None),
+    nivel_academico: str | None = Query(None),
+    ubicacion: str | None = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     ensure_same_user(current_user, empresa_id, NombreRol.empresa.value)
     """RF-06: Permite a la empresa ver quiénes han aplicado a sus vacantes."""
-    return crud_postulacion.listar_postulaciones_empresa(db, empresa_id)
+    plan_context = build_plan_context(current_user)
+
+    if plan_context.candidate_filter_level != "advanced" and any(
+        [institucion_educativa, nivel_academico, ubicacion]
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Tu plan actual solo permite filtros básicos sobre postulantes",
+        )
+
+    return crud_postulacion.listar_postulaciones_empresa(
+        db,
+        empresa_id,
+        estado=estado,
+        institucion_educativa=institucion_educativa,
+        nivel_academico=nivel_academico,
+        ubicacion=ubicacion,
+    )
 
 @router.put("/{postulacion_id}/estado")
 def actualizar_estado(

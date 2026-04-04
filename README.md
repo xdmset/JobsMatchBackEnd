@@ -34,7 +34,7 @@ python3 -m alembic upgrade head
 4. Carga de Datos de Prueba (Respaldo)
 Si cuentas con el archivo de respaldo SQL, impórtalo para tener los roles, usuarios y vacantes iniciales:
 
-mysql -u root -p jobsmatch < respaldo_jobsmatch.sql
+mysql -u root -p jobsmatch < respaldo_jobsmatch_2026-04-04.sql
 🚀 Ejecución del Servidor
 Para iniciar el servicio de desarrollo:
 
@@ -93,23 +93,51 @@ PAYPAL_WEBHOOK_ID=tu_webhook_id
 PAYPAL_WEB_RETURN_URL=http://localhost:3000/payments/paypal/success
 PAYPAL_WEB_CANCEL_URL=http://localhost:3000/payments/paypal/cancel
 PAYPAL_CURRENCY=MXN
-PAYPAL_MONTHLY_PRICE=199.00
-PAYPAL_SEMIANNUAL_PRICE=999.00
-PAYPAL_ANNUAL_PRICE=1799.00
+PAYPAL_STUDENT_PRODUCT_NAME=JOBMATCH Premium Estudiante
+PAYPAL_STUDENT_PRODUCT_DESCRIPTION=Suscripciones premium para estudiantes
+PAYPAL_COMPANY_PRODUCT_NAME=JOBMATCH Premium Empresa
+PAYPAL_COMPANY_PRODUCT_DESCRIPTION=Suscripciones premium para empresas
+PAYPAL_STUDENT_MONTHLY_PRICE=199.00
+PAYPAL_STUDENT_SEMIANNUAL_PRICE=999.00
+PAYPAL_STUDENT_ANNUAL_PRICE=1799.00
+PAYPAL_COMPANY_MONTHLY_PRICE=499.00
+PAYPAL_COMPANY_SEMIANNUAL_PRICE=2499.00
+PAYPAL_COMPANY_ANNUAL_PRICE=4499.00
+
+STUDENT_FREE_DAILY_SWIPES=10
+STUDENT_PREMIUM_DAILY_SWIPES=1000
+STUDENT_FREE_VIEW_HISTORY_LIMIT=15
+STUDENT_PREMIUM_VIEW_HISTORY_LIMIT=0
+STUDENT_FREE_MATCH_HISTORY_LIMIT=10
+STUDENT_PREMIUM_MATCH_HISTORY_LIMIT=0
+
+COMPANY_FREE_ACTIVE_VACANCIES=5
+COMPANY_PREMIUM_ACTIVE_VACANCIES=50
 ```
 
 Modelo de suscripciones:
 
-- Cada usuario nuevo recibe automaticamente una suscripcion `free`.
-- Las suscripciones `premium` de PayPal se guardan como registros separados para conservar historial.
+- Cada usuario nuevo recibe automaticamente una suscripcion `free` segun su rol: `free_estudiante` o `free_empresa`.
+- Las suscripciones `premium` de PayPal se separan por rol y periodicidad.
+- Catalogo premium soportado:
+  - `premium_estudiante_mensual`
+  - `premium_estudiante_semestral`
+  - `premium_estudiante_anual`
+  - `premium_empresa_mensual`
+  - `premium_empresa_semestral`
+  - `premium_empresa_anual`
 - `usuarios.es_premium` se sincroniza desde las suscripciones activas.
 - `GET /api/v1/user/me` recalcula `es_premium` antes de responder.
 - `POST /api/v1/user/premium/sync` permite a un admin resincronizar todos los usuarios.
 
 Flujo recomendado para PayPal Subscriptions:
 
-1. Ejecuta `POST /api/v1/payments/paypal/bootstrap` con un admin para crear el producto y los planes mensual, semestral y anual en PayPal.
-2. El frontend consulta `GET /api/v1/payments/paypal/plans`.
+1. Ejecuta `POST /api/v1/payments/paypal/bootstrap` con un admin para crear dos productos de PayPal:
+   - Premium Estudiante
+   - Premium Empresa
+2. El frontend consulta:
+   - `GET /api/v1/payments/paypal/plans` para catalogo completo
+   - `GET /api/v1/payments/paypal/plans/me` para mostrar solo los planes del rol autenticado
 3. El usuario autenticado inicia su alta con `POST /api/v1/payments/paypal/subscriptions`.
 4. El frontend redirige al `approve_url` devuelto por PayPal.
 5. Al volver a tu frontend, llama `POST /api/v1/payments/paypal/subscriptions/{paypal_subscription_id}/sync`.
@@ -124,11 +152,16 @@ Ejemplo de creacion de suscripcion:
 
 ```json
 {
-  "plan_code": "mensual",
+  "billing_cycle": "mensual",
   "return_url": "https://jobmatch.com.mx/payments/paypal/success",
   "cancel_url": "https://jobmatch.com.mx/payments/paypal/cancel"
 }
 ```
+
+El backend resuelve automaticamente el plan correcto segun el rol autenticado:
+
+- estudiante + `mensual` -> `premium_estudiante_mensual`
+- empresa + `mensual` -> `premium_empresa_mensual`
 
 Guia de implementacion frontend:
 
@@ -214,7 +247,10 @@ Notas:
 | `GET /api/v1/media/empresas/{usuario_id}/foto` | Si | Si | Si | Si |
 | `POST/DELETE /api/v1/media/empresas/{usuario_id}/foto` | No | No | Solo propio recurso | Si |
 | `POST /api/v1/swipes/{estudiante_id}` | No | Solo su propio `estudiante_id` | No | Si |
+| `GET /api/v1/swipes/{estudiante_id}/vacantes` | No | Solo su propio `estudiante_id` | No | Si |
 | `POST /api/v1/swipes/empresa/{empresa_id}` | No | No | Solo su propio `empresa_id` | Si |
+| `GET /api/v1/swipes/empresa/{empresa_id}/candidatos?vacante_id=*` | No | No | Solo su propio `empresa_id` | Si |
+| `GET /api/v1/matches/estudiante/{estudiante_id}` | No | Solo su propio `estudiante_id` | No | Si |
 | `POST /api/v1/postulaciones/web` | No | Solo su propia postulacion | No | Si |
 | `GET /api/v1/postulaciones/empresa/{empresa_id}` | No | No | Solo su propia empresa | Si |
 | `PUT /api/v1/postulaciones/{postulacion_id}/estado` | No | No | Solo postulaciones de su empresa | Si |
@@ -226,6 +262,7 @@ Notas:
 | `GET /api/v1/suscripciones/` y `GET /api/v1/suscripciones/{suscripcion_id}` | No | No | No | Si |
 | `POST/PUT/DELETE /api/v1/suscripciones/*` | No | No | No | Si |
 | `GET /api/v1/payments/paypal/plans` | Si | Si | Si | Si |
+| `GET /api/v1/payments/paypal/plans/me` | No | Si | Si | Si |
 | `POST /api/v1/payments/paypal/bootstrap` | No | No | No | Si |
 | `POST /api/v1/payments/paypal/subscriptions` | No | Si | Si | Si |
 | `POST /api/v1/payments/paypal/subscriptions/{paypal_subscription_id}/sync` | No | Solo propia | Solo propia | Si |
@@ -445,9 +482,10 @@ Notas:
 - `PAYPAL_WEB_RETURN_URL`
 - `PAYPAL_WEB_CANCEL_URL`
 - `PAYPAL_CURRENCY`
-- `PAYPAL_MONTHLY_PRICE`
-- `PAYPAL_SEMIANNUAL_PRICE`
-- `PAYPAL_ANNUAL_PRICE`
+- `PAYPAL_STUDENT_*`
+- `PAYPAL_COMPANY_*`
+- `STUDENT_*`
+- `COMPANY_*`
 
 Ejemplo:
 
@@ -488,6 +526,13 @@ curl https://api.jobmatch.com.mx/api/v1/suscripciones/usuario/123/actual \
   -H "Authorization: Bearer TU_TOKEN"
 ```
 
+Consulta de planes PayPal para el rol autenticado:
+
+```bash
+curl https://api.jobmatch.com.mx/api/v1/payments/paypal/plans/me \
+  -H "Authorization: Bearer TU_TOKEN"
+```
+
 ### Operacion
 
 Healthcheck:
@@ -516,7 +561,7 @@ Backup MySQL:
 
 ### Usuario admin del respaldo
 
-El archivo `respaldo_jobsmatch_2026-02-10.sql` crea un admin con:
+El archivo `respaldo_jobsmatch_2026-04-04.sql` crea un admin con:
 
 - Email: `admin@test.com`
 - Password (antes del hash): `AdminJobmatch2026!`

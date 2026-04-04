@@ -12,6 +12,7 @@ from app.schemas.vacante import (
     VacanteUpdate,
 )
 from app.crud.crud_vacante import (
+    count_active_vacantes_by_empresa,
     create_vacante,
     delete_vacante,
     get_historial_vacantes_empresa,
@@ -22,8 +23,28 @@ from app.crud.crud_vacante import (
     update_vacante,
 )
 from app.db.session import get_db
+from app.services.subscription_service import build_plan_context
 
 router = APIRouter()
+
+
+def _bounded_limit(skip: int, requested_limit: int, max_items: int | None) -> int:
+    if max_items is None:
+        return requested_limit
+    remaining = max(max_items - skip, 0)
+    return min(requested_limit, remaining)
+
+
+def _ensure_valid_salary_range(sueldo_minimo: float | None, sueldo_maximo: float | None) -> None:
+    if (
+        sueldo_minimo is not None
+        and sueldo_maximo is not None
+        and sueldo_minimo > sueldo_maximo
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail="sueldo_minimo no puede ser mayor que sueldo_maximo",
+        )
 
 @router.get("/", response_model=List[Vacante])
 def read_vacantes(
@@ -72,7 +93,9 @@ def read_historial_vacantes_estudiante(
     current_user: User = Depends(get_current_user),
 ):
     ensure_same_user(current_user, estudiante_id, NombreRol.estudiante.value)
-    return get_historial_vacantes_estudiante(db, estudiante_id=estudiante_id, skip=skip, limit=limit)
+    plan_context = build_plan_context(current_user)
+    effective_limit = _bounded_limit(skip, limit, plan_context.view_history_limit)
+    return get_historial_vacantes_estudiante(db, estudiante_id=estudiante_id, skip=skip, limit=effective_limit)
 
 
 @router.get("/historial/empresa/{empresa_id}", response_model=List[VacanteHistorialEmpresa])
@@ -84,7 +107,14 @@ def read_historial_vacantes_empresa(
     current_user: User = Depends(get_current_user),
 ):
     ensure_same_user(current_user, empresa_id, NombreRol.empresa.value)
-    return get_historial_vacantes_empresa(db, empresa_id=empresa_id, skip=skip, limit=limit)
+    historial = get_historial_vacantes_empresa(db, empresa_id=empresa_id, skip=skip, limit=limit)
+    plan_context = build_plan_context(current_user)
+    if plan_context.analytics_level == "basic":
+        for item in historial:
+            item.ultima_visualizacion = None
+            item.ultimo_like_estudiante = None
+            item.ultimo_like_empresa = None
+    return historial
 
 @router.get("/{vacante_id}", response_model=Vacante)
 def read_vacante(vacante_id: int, db: Session = Depends(get_db)):
@@ -101,6 +131,16 @@ def create_new_vacante(
     current_user: User = Depends(get_current_user),
 ):
     ensure_same_user(current_user, empresa_id, NombreRol.empresa.value)
+    _ensure_valid_salary_range(vacante.sueldo_minimo, vacante.sueldo_maximo)
+    plan_context = build_plan_context(current_user)
+    requested_state = vacante.estado or "activa"
+    if requested_state == "activa" and plan_context.active_vacancies_limit is not None:
+        active_count = count_active_vacantes_by_empresa(db, empresa_id)
+        if active_count >= plan_context.active_vacancies_limit:
+            raise HTTPException(
+                status_code=403,
+                detail="Límite de vacantes activas alcanzado para tu plan actual",
+            )
     return create_vacante(db, vacante, empresa_id)
 
 @router.put("/{vacante_id}", response_model=Vacante)
@@ -115,6 +155,24 @@ def update_existing_vacante(
         raise HTTPException(status_code=404, detail="Vacante no encontrada")
     if current_user.id != existing.empresa_id:
         ensure_roles(current_user, NombreRol.admin.value)
+
+    incoming = vacante.model_dump(exclude_unset=True)
+    _ensure_valid_salary_range(
+        incoming.get("sueldo_minimo", existing.sueldo_minimo),
+        incoming.get("sueldo_maximo", existing.sueldo_maximo),
+    )
+
+    target_state = vacante.estado or existing.estado
+    if existing.estado != "activa" and target_state == "activa":
+        owner_user = current_user if current_user.id == existing.empresa_id else existing.empresa.user
+        plan_context = build_plan_context(owner_user)
+        if plan_context.active_vacancies_limit is not None:
+            active_count = count_active_vacantes_by_empresa(db, existing.empresa_id)
+            if active_count >= plan_context.active_vacancies_limit:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Límite de vacantes activas alcanzado para tu plan actual",
+                )
 
     updated = update_vacante(db, vacante_id, vacante)
     return updated

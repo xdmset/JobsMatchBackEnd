@@ -13,6 +13,11 @@ class Suscripcion(Base):
         Enum("free", "premium", name="tipo_plan_suscripcion"),
         nullable=False,
     )
+    rol_objetivo = Column(
+        Enum("estudiante", "empresa", name="rol_objetivo_suscripcion"),
+        nullable=False,
+    )
+    codigo_plan = Column(String(64), nullable=True)
     origen_pago = Column(
         Enum("manual", "paypal", name="origen_pago_suscripcion"),
         nullable=False,

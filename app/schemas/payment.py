@@ -6,7 +6,7 @@ from typing import Optional
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict
 
 
-class PaypalPlanCode(str, Enum):
+class PaypalBillingCycle(str, Enum):
     mensual = "mensual"
     semestral = "semestral"
     anual = "anual"
@@ -16,8 +16,10 @@ class PaypalPlanResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    codigo: PaypalPlanCode
+    codigo: str
     nombre: str
+    rol_objetivo: str
+    periodicidad: PaypalBillingCycle
     paypal_product_id: str
     paypal_plan_id: str
     moneda: str
@@ -28,12 +30,12 @@ class PaypalPlanResponse(BaseModel):
 
 
 class PaypalBootstrapResponse(BaseModel):
-    product_id: str
+    products: dict[str, str]
     plans: list[PaypalPlanResponse]
 
 
 class PaypalCreateSubscriptionRequest(BaseModel):
-    plan_code: PaypalPlanCode
+    billing_cycle: PaypalBillingCycle
     return_url: Optional[AnyHttpUrl] = None
     cancel_url: Optional[AnyHttpUrl] = None
 
