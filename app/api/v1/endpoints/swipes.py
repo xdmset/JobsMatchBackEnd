@@ -30,7 +30,9 @@ def registrar_swipe(
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
-    if not usuario.es_premium:
+    interaccion_existente = crud_swipe.get_swipe_estudiante(db, estudiante_id, swipe.vacante_id)
+
+    if not usuario.es_premium and not interaccion_existente:
         hoy = date.today()
         conteo_hoy = db.query(InteraccionSwipe).filter(
             InteraccionSwipe.estudiante_id == estudiante_id,
@@ -43,6 +45,14 @@ def registrar_swipe(
     vacante = crud_swipe.get_vacante(db, swipe.vacante_id)
     if not vacante:
         raise HTTPException(status_code=404, detail="Vacante no encontrada")
+
+    # Reenvio idempotente: no consume un swipe nuevo ni altera timestamps.
+    if interaccion_existente and interaccion_existente.interes_estudiante == swipe.interes_estudiante:
+        if swipe.interes_estudiante:
+            match_confirmado = crud_swipe.get_match(db, estudiante_id, vacante.id)
+            if match_confirmado:
+                return match_confirmado
+        return None
 
     # 2. Registrar Interacción (upsert simple)
     crud_swipe.upsert_swipe_estudiante(
@@ -95,6 +105,20 @@ def registrar_swipe_empresa(
         raise HTTPException(status_code=404, detail="Vacante no encontrada")
     if vacante.empresa_id != empresa_id:
         raise HTTPException(status_code=403, detail="La vacante no pertenece a la empresa")
+
+    interaccion_existente = crud_swipe.get_swipe_empresa(
+        db,
+        empresa_id=empresa_id,
+        estudiante_id=swipe.estudiante_id,
+        vacante_id=swipe.vacante_id,
+    )
+
+    if interaccion_existente and interaccion_existente.interes_empresa == swipe.interes_empresa:
+        if swipe.interes_empresa:
+            match_confirmado = crud_swipe.get_match(db, swipe.estudiante_id, swipe.vacante_id)
+            if match_confirmado:
+                return match_confirmado
+        return None
 
     crud_swipe.upsert_swipe_empresa(
         db,
