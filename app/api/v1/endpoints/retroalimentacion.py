@@ -11,6 +11,7 @@ from app.schemas.retroalimentacion import (
     RetroalimentacionRead,
     RetroalimentacionUpdate,
 )
+from app.services.feedback_roadmap_service import generate_roadmap_for_postulacion, generate_roadmap_for_retroalimentacion
 
 router = APIRouter()
 
@@ -78,7 +79,11 @@ def create_new_retroalimentacion(
             detail="Ya existe retroalimentacion para esta postulacion",
         )
 
-    return crud_retroalimentacion.create_retroalimentacion(db, retroalimentacion)
+    created = crud_retroalimentacion.create_retroalimentacion(db, retroalimentacion)
+    generate_roadmap_for_retroalimentacion(db, created)
+    db.commit()
+    db.refresh(created)
+    return created
 
 
 @router.put("/{retroalimentacion_id}", response_model=RetroalimentacionRead)
@@ -96,7 +101,30 @@ def update_existing_retroalimentacion(
         raise HTTPException(status_code=404, detail="Postulacion no encontrada")
     if current_user.id != postulacion.empresa_id:
         ensure_roles(current_user, NombreRol.admin.value)
-    return crud_retroalimentacion.update_retroalimentacion(db, existing, retroalimentacion)
+    updated = crud_retroalimentacion.update_retroalimentacion(db, existing, retroalimentacion)
+    generate_roadmap_for_retroalimentacion(db, updated)
+    db.commit()
+    db.refresh(updated)
+    return updated
+
+
+@router.post("/postulacion/{postulacion_id}/generar-roadmap", response_model=RetroalimentacionRead)
+def generate_feedback_roadmap(
+    postulacion_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    postulacion = crud_postulacion.get_postulacion(db, postulacion_id)
+    if not postulacion:
+        raise HTTPException(status_code=404, detail="Postulacion no encontrada")
+    _authorize_postulacion_access(current_user, postulacion.empresa_id, postulacion.estudiante_id)
+    retroalimentacion = crud_retroalimentacion.get_retroalimentacion_by_postulacion(db, postulacion_id)
+    if not retroalimentacion:
+        raise HTTPException(status_code=404, detail="Retroalimentacion no encontrada")
+    generate_roadmap_for_postulacion(db, postulacion_id)
+    db.commit()
+    db.refresh(retroalimentacion)
+    return retroalimentacion
 
 
 @router.delete("/{retroalimentacion_id}", response_model=RetroalimentacionRead)

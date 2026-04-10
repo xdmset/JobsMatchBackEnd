@@ -113,7 +113,29 @@ STUDENT_PREMIUM_MATCH_HISTORY_LIMIT=0
 
 COMPANY_FREE_ACTIVE_VACANCIES=5
 COMPANY_PREMIUM_ACTIVE_VACANCIES=50
+
+ROADMAP_AI_MODE=heuristic
+ROADMAP_AI_API_KEY=
+ROADMAP_AI_MODEL=gpt-4o-mini
+ROADMAP_AI_BASE_URL=https://api.openai.com/v1/chat/completions
+ROADMAP_AI_TIMEOUT_SECONDS=30
 ```
+
+Variables de entorno para roadmap de mejora por retroalimentacion:
+
+```env
+ROADMAP_AI_MODE=heuristic
+ROADMAP_AI_API_KEY=
+ROADMAP_AI_MODEL=gpt-4o-mini
+ROADMAP_AI_BASE_URL=https://api.openai.com/v1/chat/completions
+ROADMAP_AI_TIMEOUT_SECONDS=30
+```
+
+Notas:
+
+- `ROADMAP_AI_MODE=heuristic` genera el roadmap localmente sin proveedor externo.
+- `ROADMAP_AI_MODE=openai` habilita la generacion con proveedor externo y requiere `ROADMAP_AI_API_KEY`.
+- Si la generacion falla, la retroalimentacion sigue guardandose y el endpoint respondera `roadmap_estado="error"`.
 
 Modelo de suscripciones:
 
@@ -216,6 +238,76 @@ Notas:
 - `GET /api/v1/media/estudiantes/{usuario_id}/cv` requiere autenticacion del propio estudiante, empresa o admin.
 - `POST /api/v1/auth/jwt/logout` es stateless: el cliente debe descartar ambos tokens.
 
+## Roadmap de mejora por rechazo
+
+Cuando una empresa rechaza una postulacion usando `PUT /api/v1/postulaciones/{postulacion_id}/estado` con `feedback`, el backend:
+
+1. guarda o actualiza la retroalimentacion;
+2. genera un roadmap de mejora para el estudiante usando:
+   - `campos_mejora`
+   - `sugerencias_perfil`
+   - contexto de `perfil_estudiante`
+   - contexto de la `vacante`
+3. expone ese roadmap en `GET /api/v1/retroalimentacion/postulacion/{postulacion_id}`.
+
+Campos nuevos devueltos por retroalimentacion:
+
+- `roadmap_estado`: `pendiente`, `generado` o `error`
+- `roadmap_generado_en`
+- `roadmap`
+
+Ejemplo de respuesta:
+
+```json
+{
+  "id": 1,
+  "postulacion_id": 42,
+  "campos_mejora": "Mejorar SQL",
+  "sugerencias_perfil": "Agregar proyectos backend",
+  "fecha_envio": "2026-04-07T10:00:00Z",
+  "roadmap_estado": "generado",
+  "roadmap_generado_en": "2026-04-07T10:00:02Z",
+  "roadmap": {
+    "habilidades": [
+      "SQL aplicado a vacantes reales",
+      "Desarrollo de proyectos backend demostrables"
+    ],
+    "acciones": [
+      "Resolver 15 ejercicios de consultas con JOIN, GROUP BY y subconsultas.",
+      "Construir una base de datos pequena para un proyecto personal y documentar 10 consultas utiles.",
+      "Construir un proyecto backend pequeno con autenticacion, persistencia y documentacion.",
+      "Agregar README tecnico con arquitectura, endpoints y decisiones de diseno."
+    ],
+    "recursos": [
+      "SQLBolt",
+      "Mode SQL Tutorial",
+      "LeetCode SQL",
+      "GitHub",
+      "Postman"
+    ],
+    "tiempo_estimado": "3 semanas",
+    "prioridad": "Alta",
+    "roadmap_detallado": [
+      {
+        "semana": "Semana 1",
+        "objetivo": "Cerrar brechas tecnicas principales detectadas en la retroalimentacion.",
+        "tareas": [
+          "Resolver 15 ejercicios de consultas con JOIN, GROUP BY y subconsultas.",
+          "Construir una base de datos pequena para un proyecto personal y documentar 10 consultas utiles.",
+          "Construir un proyecto backend pequeno con autenticacion, persistencia y documentacion."
+        ]
+      }
+    ]
+  }
+}
+```
+
+Regeneracion manual:
+
+```text
+POST /api/v1/retroalimentacion/postulacion/{postulacion_id}/generar-roadmap
+```
+
 ## Matriz de acceso por rol
 
 | Endpoint / Recurso | Publico | Estudiante | Empresa | Admin |
@@ -253,6 +345,7 @@ Notas:
 | `PUT /api/v1/postulaciones/{postulacion_id}/estado` | No | No | Solo postulaciones de su empresa | Si |
 | `GET /api/v1/retroalimentacion/{retroalimentacion_id}` | No | Solo si pertenece a su postulacion | Solo si pertenece a su empresa | Si |
 | `GET /api/v1/retroalimentacion/postulacion/{postulacion_id}` | No | Solo si pertenece a su postulacion | Solo si pertenece a su empresa | Si |
+| `POST /api/v1/retroalimentacion/postulacion/{postulacion_id}/generar-roadmap` | No | Solo si pertenece a su postulacion | Solo si pertenece a su empresa | Si |
 | `POST/PUT/DELETE /api/v1/retroalimentacion/*` | No | No | Solo sobre postulaciones de su empresa | Si |
 | `GET /api/v1/suscripciones/usuario/{usuario_id}` | No | Solo propias | Solo propias | Si |
 | `GET /api/v1/suscripciones/usuario/{usuario_id}/actual` | No | Solo propia | Solo propia | Si |
@@ -353,6 +446,7 @@ Notas:
 - `PAYPAL_COMPANY_*`
 - `STUDENT_*`
 - `COMPANY_*`
+- `ROADMAP_AI_*`
 
 Ejemplo:
 
@@ -368,6 +462,10 @@ PAYPAL_WEBHOOK_ID=tu_webhook_id_live
 PAYPAL_CURRENCY=MXN
 PAYPAL_WEB_RETURN_URL=https://jobmatch.com.mx/payments/paypal/success
 PAYPAL_WEB_CANCEL_URL=https://jobmatch.com.mx/payments/paypal/cancel
+ROADMAP_AI_MODE=heuristic
+ROADMAP_AI_MODEL=gpt-4o-mini
+ROADMAP_AI_BASE_URL=https://api.openai.com/v1/chat/completions
+ROADMAP_AI_TIMEOUT_SECONDS=30
 ```
 
 ### Operacion de suscripciones

@@ -55,6 +55,12 @@ class Settings(BaseSettings):
     COMPANY_FREE_SEARCH_PRIORITY: int = 0
     COMPANY_PREMIUM_SEARCH_PRIORITY: int = 10
 
+    ROADMAP_AI_MODE: str = "heuristic"
+    ROADMAP_AI_API_KEY: str = ""
+    ROADMAP_AI_MODEL: str = "gpt-4o-mini"
+    ROADMAP_AI_BASE_URL: str = "https://api.openai.com/v1/chat/completions"
+    ROADMAP_AI_TIMEOUT_SECONDS: int = 30
+
     class Config:
         env_file = ".env"
 
