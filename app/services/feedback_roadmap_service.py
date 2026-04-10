@@ -523,6 +523,91 @@ FORMATO:
   ]
 }}"""
 
+
+KNOWN_SKILL_TEMPLATES = {
+    "sql": {
+        "skill": "SQL aplicado a vacantes reales",
+        "actions": [
+            "Resolver 15 ejercicios de consultas con JOIN, GROUP BY y subconsultas.",
+            "Construir una base de datos pequena para un proyecto personal y documentar 10 consultas utiles.",
+        ],
+        "resources": ["SQLBolt", "Mode SQL Tutorial", "LeetCode SQL"],
+    },
+    "python": {
+        "skill": "Python orientado a resolucion de problemas",
+        "actions": [
+            "Resolver 3 ejercicios semanales de estructuras de datos y manejo de archivos en Python.",
+            "Desarrollar un script automatizado con validaciones y manejo de errores.",
+        ],
+        "resources": ["Exercism Python", "Docs oficiales de Python", "Kaggle Learn Python"],
+    },
+    "fastapi": {
+        "skill": "Desarrollo backend con APIs",
+        "actions": [
+            "Crear una API CRUD con FastAPI, validaciones y documentacion automatica.",
+            "Publicar el proyecto en GitHub con instrucciones de ejecucion y ejemplos de requests.",
+        ],
+        "resources": ["Documentacion de FastAPI", "Repositorio personal en GitHub", "Postman"],
+    },
+    "django": {
+        "skill": "Desarrollo backend con Django",
+        "actions": [
+            "Construir un proyecto CRUD con autenticacion basica en Django.",
+            "Desplegar una demo funcional y documentar las decisiones tecnicas.",
+        ],
+        "resources": ["Documentacion de Django", "Railway o Render", "GitHub Projects"],
+    },
+    "backend": {
+        "skill": "Desarrollo de proyectos backend demostrables",
+        "actions": [
+            "Construir un proyecto backend pequeno con autenticacion, persistencia y documentacion.",
+            "Agregar README tecnico con arquitectura, endpoints y decisiones de diseno.",
+        ],
+        "resources": ["GitHub", "Postman", "Render o Railway"],
+    },
+    "frontend": {
+        "skill": "Presentacion de proyectos frontend",
+        "actions": [
+            "Construir una interfaz responsive que consuma una API real o simulada.",
+            "Documentar capturas, decisiones de UX y mejoras futuras en el repositorio.",
+        ],
+        "resources": ["MDN", "Frontend Mentor", "GitHub Pages"],
+    },
+    "portafolio": {
+        "skill": "Presentacion tecnica del portafolio",
+        "actions": [
+            "Subir al menos 2 proyectos con README claro, stack, capturas y aprendizajes.",
+            "Destacar el problema, la solucion y el resultado de cada proyecto.",
+        ],
+        "resources": ["GitHub", "Notion", "README templates"],
+    },
+    "perfil": {
+        "skill": "Optimizacion del perfil profesional",
+        "actions": [
+            "Reescribir la biografia resaltando habilidades, herramientas y tipo de vacantes objetivo.",
+            "Actualizar el perfil con 5 habilidades concretas y evidencia de proyectos.",
+        ],
+        "resources": ["LinkedIn", "GitHub", "Plantilla de CV ATS"],
+    },
+    "cv": {
+        "skill": "Mejora de CV orientado a empleabilidad",
+        "actions": [
+            "Actualizar el CV para incluir logros medibles, stack tecnologico y proyectos relevantes.",
+            "Ajustar el CV para que el resumen profesional coincida con vacantes similares.",
+        ],
+        "resources": ["Canva CV", "Plantilla ATS", "Overleaf"],
+    },
+    "entrevista": {
+        "skill": "Preparacion para entrevistas tecnicas",
+        "actions": [
+            "Practicar 2 simulaciones de entrevista explicando proyectos, decisiones y resultados.",
+            "Preparar respuestas cortas sobre fortalezas, areas de mejora y experiencia academica.",
+        ],
+        "resources": ["Pramp", "YouTube entrevistas tecnicas", "Notas personales"],
+    },
+}
+
+
 def generate_roadmap_for_postulacion(db: Session, postulacion_id: int) -> Retroalimentacion | None:
     retroalimentacion = (
         db.query(Retroalimentacion)
@@ -560,18 +645,16 @@ def generate_roadmap_for_retroalimentacion(
     retroalimentacion.roadmap_estado = "pendiente"
 
     try:
-        # LLAMADA ÚNICA A GEMINI (Sin heurística de respaldo)
-        roadmap_dict = _generate_with_gemini(context)
-        
-        # Validación con Pydantic para asegurar que el JSON de Gemini es correcto
+        roadmap_dict = _generate_roadmap_payload(context)
         roadmap = RoadmapData.model_validate(roadmap_dict)
-        
         retroalimentacion.roadmap_json = roadmap.model_dump()
         retroalimentacion.roadmap_estado = "generado"
         retroalimentacion.roadmap_generado_en = datetime.now(timezone.utc)
+        retroalimentacion.roadmap_error = None
     except Exception as exc:
+        retroalimentacion.roadmap_json = None
         retroalimentacion.roadmap_estado = "error"
-        retroalimentacion.roadmap_error = f"Error en Gemini: {str(exc)}"
+        retroalimentacion.roadmap_error = str(exc)
 
     db.flush()
     return retroalimentacion
@@ -644,9 +727,154 @@ def _generate_with_gemini(context: dict[str, Any]) -> dict[str, Any]:
     clean_content = _strip_code_fences(content)
     return json.loads(clean_content)
 
+
+def _generate_roadmap_payload(context: dict[str, Any]) -> dict[str, Any]:
+    if settings.ROADMAP_AI_MODE.lower() == "heuristic":
+        return _generate_heuristic(context)
+
+    try:
+        return _generate_with_gemini(context)
+    except Exception:
+        return _generate_heuristic(context)
+
 def _strip_code_fences(value: str) -> str:
     cleaned = value.strip()
     cleaned = re.sub(r"^```json\s*", "", cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r"^```\s*", "", cleaned)
     cleaned = re.sub(r"\s*```$", "", cleaned)
     return cleaned.strip()
+
+
+def _generate_heuristic(context: dict[str, Any]) -> dict[str, Any]:
+    student_skills = _tokenize(context["habilidades_actuales"])
+    focus_areas = _extract_focus_areas(context)
+    skills: list[str] = []
+    actions: list[str] = []
+    resources: list[str] = []
+
+    for area in focus_areas:
+        template = _match_template(area)
+        if template:
+            skills.append(template["skill"])
+            actions.extend(template["actions"])
+            resources.extend(template["resources"])
+        else:
+            normalized = area.strip().capitalize()
+            skills.append(normalized)
+            actions.append(f"Practicar {area.strip()} con un entregable concreto alineado a vacantes similares.")
+            actions.append(f"Documentar avances semanales sobre {area.strip()} en GitHub o portafolio personal.")
+            resources.extend(["GitHub", "LinkedIn", "Cursos introductorios del tema"])
+
+    if not skills:
+        skills = [
+            "Comunicacion clara del perfil profesional",
+            "Presentacion de proyectos alineados a la vacante",
+        ]
+        actions = [
+            "Actualizar la biografia del perfil para describir stack, intereses y tipo de vacantes objetivo.",
+            "Publicar al menos 2 proyectos con README tecnico, capturas y aprendizajes.",
+        ]
+        resources = ["GitHub", "LinkedIn", "Plantilla ATS"]
+
+    if "github" not in {item.lower() for item in resources}:
+        resources.append("GitHub")
+
+    missing_from_vacancy = [
+        token for token in _tokenize(context["vacante_requisitos"]) if token not in student_skills
+    ]
+    if missing_from_vacancy:
+        skill_label = f"Refuerzo de {missing_from_vacancy[0].upper()} aplicado a la vacante"
+        if skill_label not in skills:
+            skills.append(skill_label)
+            actions.append(
+                f"Crear una evidencia practica donde uses {missing_from_vacancy[0].upper()} en un proyecto corto relacionado con la vacante."
+            )
+
+    skills = _unique_list(skills, limit=5)
+    actions = _unique_list(actions, limit=8)
+    resources = _unique_list(resources, limit=6)
+
+    roadmap_steps = [
+        {
+            "semana": "Semana 1",
+            "objetivo": "Cerrar brechas tecnicas principales detectadas en la retroalimentacion.",
+            "tareas": _unique_list(actions[:3], limit=3),
+        },
+        {
+            "semana": "Semana 2",
+            "objetivo": "Convertir la practica en evidencia visible para futuras postulaciones.",
+            "tareas": _unique_list(actions[3:6] or actions[:3], limit=3),
+        },
+        {
+            "semana": "Semana 3",
+            "objetivo": "Ajustar perfil, CV y portafolio para vacantes similares.",
+            "tareas": [
+                "Actualizar el perfil con habilidades verificables y proyectos relevantes.",
+                "Revisar el CV para alinear resumen, stack y experiencia academica.",
+                "Preparar una nueva postulacion adaptando el perfil a requisitos similares.",
+            ],
+        },
+    ]
+
+    return {
+        "habilidades": skills,
+        "acciones": actions,
+        "recursos": resources,
+        "tiempo_estimado": "3 semanas",
+        "prioridad": "Alta",
+        "roadmap_detallado": roadmap_steps,
+    }
+
+
+def _extract_focus_areas(context: dict[str, Any]) -> list[str]:
+    text = " ".join(
+        [
+            str(context.get("campos_mejora", "")),
+            str(context.get("sugerencias_perfil", "")),
+            str(context.get("vacante_titulo", "")),
+            str(context.get("vacante_requisitos", "")),
+        ]
+    )
+    candidates = re.split(r"[,\n;/]| y | e ", text, flags=re.IGNORECASE)
+    cleaned = []
+    for candidate in candidates:
+        item = candidate.strip(" .:-")
+        if len(item) < 3:
+            continue
+        cleaned.append(item)
+    return _unique_list(cleaned, limit=6)
+
+
+def _match_template(area: str) -> dict[str, Any] | None:
+    normalized = area.lower()
+    for keyword, template in KNOWN_SKILL_TEMPLATES.items():
+        if keyword in normalized:
+            return template
+    return None
+
+
+def _tokenize(value: Any) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        text = " ".join(str(item) for item in value)
+    else:
+        text = str(value)
+    return re.findall(r"[a-zA-Z][a-zA-Z0-9+#.-]{1,20}", text.lower())
+
+
+def _unique_list(items: list[str], limit: int) -> list[str]:
+    result: list[str] = []
+    seen: set[str] = set()
+    for item in items:
+        normalized = item.strip()
+        if not normalized:
+            continue
+        key = normalized.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(normalized)
+        if len(result) >= limit:
+            break
+    return result
