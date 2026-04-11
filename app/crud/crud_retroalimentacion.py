@@ -42,6 +42,11 @@ def update_retroalimentacion(
     update_data = retroalimentacion.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(db_obj, field, value)
+    if update_data:
+        db_obj.roadmap_json = None
+        db_obj.roadmap_estado = "pendiente"
+        db_obj.roadmap_generado_en = None
+        db_obj.roadmap_error = None
     db.commit()
     db.refresh(db_obj)
     return db_obj

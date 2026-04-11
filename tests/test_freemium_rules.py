@@ -36,17 +36,18 @@ def _build_db():
 
 
 def _seed_roles(db):
+    rol_admin = Role(nombre=NombreRol.admin)
     rol_estudiante = Role(nombre=NombreRol.estudiante)
     rol_empresa = Role(nombre=NombreRol.empresa)
-    db.add_all([rol_estudiante, rol_empresa])
+    db.add_all([rol_admin, rol_estudiante, rol_empresa])
     db.flush()
-    return rol_estudiante, rol_empresa
+    return rol_admin, rol_estudiante, rol_empresa
 
 
 def test_default_subscription_uses_user_role_scope():
     db = _build_db()
     try:
-        _, rol_empresa = _seed_roles(db)
+        _, _, rol_empresa = _seed_roles(db)
         empresa = User(email="empresa-plan@example.com", password_hash="hashed", rol_id=rol_empresa.id, rol=rol_empresa)
         db.add(empresa)
         db.flush()
@@ -66,7 +67,7 @@ def test_default_subscription_uses_user_role_scope():
 def test_build_plan_context_returns_expected_limits():
     db = _build_db()
     try:
-        rol_estudiante, rol_empresa = _seed_roles(db)
+        _, rol_estudiante, rol_empresa = _seed_roles(db)
         estudiante = User(email="student-plan@example.com", password_hash="hashed", rol_id=rol_estudiante.id, rol=rol_estudiante, es_premium=False)
         empresa = User(email="company-plan@example.com", password_hash="hashed", rol_id=rol_empresa.id, rol=rol_empresa, es_premium=True)
         db.add_all([estudiante, empresa])
@@ -88,7 +89,7 @@ def test_build_plan_context_returns_expected_limits():
 def test_company_free_cannot_create_more_than_limit_of_active_vacancies():
     db = _build_db()
     try:
-        _, rol_empresa = _seed_roles(db)
+        _, _, rol_empresa = _seed_roles(db)
         empresa = User(email="company-limit@example.com", password_hash="hashed", rol_id=rol_empresa.id, rol=rol_empresa, es_premium=False)
         db.add(empresa)
         db.flush()
@@ -133,7 +134,7 @@ def test_vacante_create_rejects_invalid_salary_range():
 def test_vacante_update_rejects_partial_invalid_salary_range():
     db = _build_db()
     try:
-        _, rol_empresa = _seed_roles(db)
+        _, _, rol_empresa = _seed_roles(db)
         empresa = User(email="salary-company@example.com", password_hash="hashed", rol_id=rol_empresa.id, rol=rol_empresa)
         db.add(empresa)
         db.flush()
@@ -169,7 +170,7 @@ def test_vacante_update_rejects_partial_invalid_salary_range():
 def test_student_match_history_is_limited_for_free_users():
     db = _build_db()
     try:
-        rol_estudiante, rol_empresa = _seed_roles(db)
+        _, rol_estudiante, rol_empresa = _seed_roles(db)
         estudiante = User(email="match-free@example.com", password_hash="hashed", rol_id=rol_estudiante.id, rol=rol_estudiante, es_premium=False)
         empresa = User(email="match-company@example.com", password_hash="hashed", rol_id=rol_empresa.id, rol=rol_empresa)
         db.add_all([estudiante, empresa])
@@ -217,7 +218,7 @@ def test_paypal_catalog_contains_student_and_company_plans():
 def test_company_candidate_feed_prioritizes_premium_and_excludes_already_swiped():
     db = _build_db()
     try:
-        rol_estudiante, rol_empresa = _seed_roles(db)
+        _, rol_estudiante, rol_empresa = _seed_roles(db)
         empresa = User(email="candidate-company@example.com", password_hash="hashed", rol_id=rol_empresa.id, rol=rol_empresa, es_premium=False)
         premium_student = User(email="premium-student@example.com", password_hash="hashed", rol_id=rol_estudiante.id, rol=rol_estudiante, es_premium=True)
         free_student = User(email="free-student@example.com", password_hash="hashed", rol_id=rol_estudiante.id, rol=rol_estudiante, es_premium=False)
@@ -267,10 +268,50 @@ def test_company_candidate_feed_prioritizes_premium_and_excludes_already_swiped(
         db.close()
 
 
+def test_admin_can_access_student_match_history_without_freemium_role_error():
+    db = _build_db()
+    try:
+        rol_admin, rol_estudiante, _ = _seed_roles(db)
+        admin = User(
+            email="admin-history@example.com",
+            password_hash="hashed",
+            rol_id=rol_admin.id,
+            rol=rol_admin,
+            is_superuser=True,
+        )
+        estudiante = User(
+            email="student-history@example.com",
+            password_hash="hashed",
+            rol_id=rol_estudiante.id,
+            rol=rol_estudiante,
+            es_premium=False,
+        )
+        db.add_all([admin, estudiante])
+        db.flush()
+        db.add(
+            PerfilEstudiante(
+                usuario_id=estudiante.id,
+                **PerfilEstudianteCreate(
+                    nombre_completo="Ana",
+                    institucion_educativa="UT",
+                    nivel_academico="Licenciatura",
+                    fecha_nacimiento=date(2002, 4, 10),
+                ).model_dump()
+            )
+        )
+        db.commit()
+
+        historial = read_student_match_history(estudiante.id, db=db, current_user=admin, limit=100)
+
+        assert historial == []
+    finally:
+        db.close()
+
+
 def test_student_swipe_feed_excludes_already_swiped_and_prioritizes_premium_companies():
     db = _build_db()
     try:
-        rol_estudiante, rol_empresa = _seed_roles(db)
+        _, rol_estudiante, rol_empresa = _seed_roles(db)
         estudiante = User(email="feed-student@example.com", password_hash="hashed", rol_id=rol_estudiante.id, rol=rol_estudiante)
         premium_company = User(email="premium-company@example.com", password_hash="hashed", rol_id=rol_empresa.id, rol=rol_empresa, es_premium=True)
         free_company = User(email="free-company@example.com", password_hash="hashed", rol_id=rol_empresa.id, rol=rol_empresa, es_premium=False)
