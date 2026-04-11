@@ -105,11 +105,16 @@ def actualizar_estado_postulacion(
         if retro_existente:
             retro_existente.campos_mejora = feedback.get("campos_mejora")
             retro_existente.sugerencias_perfil = feedback.get("sugerencias_perfil")
+            retro_existente.roadmap_json = None
+            retro_existente.roadmap_estado = "pendiente"
+            retro_existente.roadmap_generado_en = None
+            retro_existente.roadmap_error = None
         else:
             nueva_retro = Retroalimentacion(
                 postulacion_id=postulacion_id,
                 campos_mejora=feedback.get("campos_mejora"),
-                sugerencias_perfil=feedback.get("sugerencias_perfil")
+                sugerencias_perfil=feedback.get("sugerencias_perfil"),
+                roadmap_estado="pendiente",
             )
             db.add(nueva_retro)
 

@@ -23,7 +23,7 @@ CREATE TABLE `alembic_version` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 LOCK TABLES `alembic_version` WRITE;
-INSERT INTO `alembic_version` VALUES ('b3c4d5e6f7a8');
+INSERT INTO `alembic_version` VALUES ('e8b1c2d3f4a5');
 UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `roles`;
@@ -343,6 +343,10 @@ CREATE TABLE `retroalimentacion` (
   `campos_mejora` text DEFAULT NULL,
   `sugerencias_perfil` text DEFAULT NULL,
   `fecha_envio` datetime DEFAULT current_timestamp(),
+  `roadmap_json` json DEFAULT NULL,
+  `roadmap_estado` varchar(50) NOT NULL DEFAULT 'pendiente',
+  `roadmap_generado_en` datetime DEFAULT NULL,
+  `roadmap_error` text DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_retro_postulacion` (`postulacion_id`),
   KEY `ix_retroalimentacion_id` (`id`),

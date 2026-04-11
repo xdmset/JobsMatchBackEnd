@@ -327,7 +327,49 @@
     {
       "name": "Get Retroalimentacion By Postulacion",
       "method": "GET",
-      "path": "/api/v1/retroalimentacion/postulacion/{postulacion_id}"
+      "path": "/api/v1/retroalimentacion/postulacion/{postulacion_id}",
+      "sample_response": {
+        "id": 1,
+        "postulacion_id": 1,
+        "campos_mejora": "Mejorar SQL",
+        "sugerencias_perfil": "Agregar proyectos backend",
+        "fecha_envio": "2026-04-07T10:00:00Z",
+        "roadmap_estado": "generado",
+        "roadmap_generado_en": "2026-04-07T10:00:02Z",
+        "roadmap": {
+          "habilidades": [
+            "SQL aplicado a vacantes reales",
+            "Desarrollo de proyectos backend demostrables"
+          ],
+          "acciones": [
+            "Resolver 15 ejercicios de consultas con JOIN, GROUP BY y subconsultas.",
+            "Construir un proyecto backend pequeno con autenticacion, persistencia y documentacion."
+          ],
+          "recursos": [
+            "SQLBolt",
+            "Mode SQL Tutorial",
+            "GitHub",
+            "Postman"
+          ],
+          "tiempo_estimado": "3 semanas",
+          "prioridad": "Alta",
+          "roadmap_detallado": [
+            {
+              "semana": "Semana 1",
+              "objetivo": "Cerrar brechas tecnicas principales detectadas en la retroalimentacion.",
+              "tareas": [
+                "Resolver 15 ejercicios de consultas con JOIN, GROUP BY y subconsultas.",
+                "Construir un proyecto backend pequeno con autenticacion, persistencia y documentacion."
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Generate Roadmap By Postulacion",
+      "method": "POST",
+      "path": "/api/v1/retroalimentacion/postulacion/{postulacion_id}/generar-roadmap"
     },
     {
       "name": "Create Retroalimentacion",

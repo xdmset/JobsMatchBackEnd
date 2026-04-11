@@ -10,6 +10,7 @@ from app.schemas.postulacion import PostulacionWebCreate, PostulacionRead, Cambi
 from app.models.postulacion import Postulacion
 from app.models.user import User
 from app.crud import crud_postulacion
+from app.services.feedback_roadmap_service import generate_roadmap_for_postulacion
 from app.services.subscription_service import build_plan_context
 
 router = APIRouter()
@@ -108,4 +109,7 @@ def actualizar_estado(
     )
 
     db.commit()
+    if data.nuevo_estado == "rechazado" and feedback_payload:
+        generate_roadmap_for_postulacion(db, postulacion_id)
+        db.commit()
     return {"message": "Estado actualizado con éxito"}

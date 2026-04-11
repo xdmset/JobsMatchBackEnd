@@ -45,6 +45,19 @@ def get_role_scope_for_user(user: User) -> str:
 
 
 def build_plan_context(user: User) -> UserPlanContext:
+    if user.is_superuser:
+        return UserPlanContext(
+            role_scope=NombreRol.admin.value,
+            is_premium=True,
+            daily_swipes_limit=None,
+            view_history_limit=None,
+            match_history_limit=None,
+            active_vacancies_limit=None,
+            search_priority=999,
+            candidate_filter_level="advanced",
+            analytics_level="advanced",
+        )
+
     role_scope = get_role_scope_for_user(user)
     if role_scope == NombreRol.estudiante.value:
         return UserPlanContext(
@@ -157,12 +170,18 @@ def sync_all_users_premium_status(db: Session) -> int:
     return updated_count
 
 
-def create_default_subscription_for_user(db: Session, usuario_id: int) -> Suscripcion:
+def create_default_subscription_for_user(db: Session, usuario_id: int) -> Suscripcion | None:
     user = db.query(User).filter(User.id == usuario_id).first()
     if not user:
         raise ValueError("Usuario no encontrado")
 
-    role_scope = get_role_scope_for_user(user)
+    try:
+        role_scope = get_role_scope_for_user(user)
+    except ValueError:
+        user.es_premium = False
+        db.flush()
+        return None
+
     existing_default = get_default_subscription_for_user(db, usuario_id, role_scope)
     if existing_default:
         sync_user_premium_status(db, usuario_id)
