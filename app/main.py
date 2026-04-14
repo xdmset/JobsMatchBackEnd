@@ -5,10 +5,12 @@ from uuid import uuid4
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import DataError
 from sqlalchemy import text
 
 from app.api.v1.api import api_router
 from app.core.config import settings
+from app.core.db_error_messages import build_enum_data_error_detail
 from app.core.logging import configure_logging
 from app.db.session import SessionLocal, init_db
 from app.services.storage_service import StorageService
@@ -82,6 +84,32 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     )
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
+#Fix ENUM API
+@app.exception_handler(DataError)
+async def data_error_handler(request: Request, exc: DataError):
+    detail = build_enum_data_error_detail(exc)
+    if detail:
+        logger.warning(
+            "Database enum validation error",
+            extra={
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": 400,
+                "detail": detail,
+            },
+        )
+        return JSONResponse(status_code=400, content={"detail": detail})
+
+    logger.exception(
+        "Unhandled database data error",
+        extra={
+            "method": request.method,
+            "path": request.url.path,
+            "status_code": 500,
+        },
+    )
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+#FINISH Fix ENUM API
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
