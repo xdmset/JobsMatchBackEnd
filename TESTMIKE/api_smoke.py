@@ -118,6 +118,7 @@ def main() -> int:
                 "/api/v1/media/estudiantes/{usuario_id}/cv",
                 "/api/v1/vacante/{empresa_id}",
                 "/api/v1/postulaciones/empresa/{empresa_id}",
+                "/api/v1/postulaciones/estudiante/{estudiante_id}",
                 "/api/v1/retroalimentacion/postulacion/{postulacion_id}",
                 "/api/v1/suscripciones/",
                 "/api/v1/suscripciones/usuario/{usuario_id}",
@@ -330,6 +331,11 @@ def _run_write_flow(base_url: str, cleanup: bool = False) -> None:
                 if isinstance(item, dict) and item.get("vacante_id") == vacante_id_primary:
                     postulacion_id = item.get("id")
                     break
+
+    if student_id is not None:
+        list_student_post_url = f"{base_url}/api/v1/postulaciones/estudiante/{student_id}"
+        l_status, l_elapsed, l_data, _ = _get_json(list_student_post_url)
+        _print_result("list_post_student", "GET", list_student_post_url, l_status, l_elapsed)
 
     if postulacion_id is not None:
         update_post_url = f"{base_url}/api/v1/postulaciones/{postulacion_id}/estado"

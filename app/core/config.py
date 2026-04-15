@@ -57,9 +57,8 @@ class Settings(BaseSettings):
 
     ROADMAP_AI_MODE: str = "heuristic"
     ROADMAP_AI_API_KEY: str = ""
-    ROADMAP_AI_MODEL: str = "gpt-4o-mini"
-    ROADMAP_AI_BASE_URL: str = "https://api.openai.com/v1/chat/completions"
-    ROADMAP_AI_TIMEOUT_SECONDS: int = 30
+    ROADMAP_AI_MODEL: str = "gemini-1.5-flash"
+    ROADMAP_AI_TIMEOUT_SECONDS: int = 60
 
     # Firebase Cloud Messaging (FCM) para push notifications
     FCM_CREDENTIALS_PATH: str = ""  # Ruta al archivo JSON de credenciales de servicio

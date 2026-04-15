@@ -182,6 +182,7 @@ def registrar_swipe(
         estudiante_nombre = perfil_estudiante.nombre_completo if perfil_estudiante else "Un estudiante"
 
         # Notificar a la empresa del like recibido
+        usuario_empresa = db.query(User).filter(User.id == vacante.empresa_id).first()
         notification_service.notificar_like_recibido(
             db=db,
             empresa_id=vacante.empresa_id,
@@ -189,6 +190,7 @@ def registrar_swipe(
             vacante_titulo=vacante.titulo,
             vacante_id=vacante.id,
             estudiante_id=estudiante_id,
+            fcm_token=usuario_empresa.fcm_token if usuario_empresa else None,
         )
 
         interes_empresa = db.query(InteraccionSwipeEmpresa).filter(
@@ -213,6 +215,7 @@ def registrar_swipe(
             )
 
             # Notificar match a ambos
+            usuario_estudiante = db.query(User).filter(User.id == estudiante_id).first()
             notification_service.notificar_match(
                 db=db,
                 usuario_id=estudiante_id,
@@ -221,6 +224,7 @@ def registrar_swipe(
                 vacante_id=vacante.id,
                 es_estudiante=True,
                 postulacion_id=postulacion.id if postulacion else None,
+                fcm_token=usuario_estudiante.fcm_token if usuario_estudiante else None,
             )
             notification_service.notificar_match(
                 db=db,
@@ -231,6 +235,7 @@ def registrar_swipe(
                 es_estudiante=False,
                 postulacion_id=postulacion.id if postulacion else None,
                 estudiante_id=estudiante_id,
+                fcm_token=usuario_empresa.fcm_token if usuario_empresa else None,
             )
 
     db.commit()
@@ -303,6 +308,8 @@ def registrar_swipe_empresa(
             estudiante_nombre = perfil_estudiante.nombre_completo if perfil_estudiante else "Un estudiante"
 
             # Notificar match a ambos
+            usuario_estudiante_match = db.query(User).filter(User.id == swipe.estudiante_id).first()
+            usuario_empresa_match = db.query(User).filter(User.id == empresa_id).first()
             notification_service.notificar_match(
                 db=db,
                 usuario_id=swipe.estudiante_id,
@@ -311,6 +318,7 @@ def registrar_swipe_empresa(
                 vacante_id=vacante.id,
                 es_estudiante=True,
                 postulacion_id=postulacion.id if postulacion else None,
+                fcm_token=usuario_estudiante_match.fcm_token if usuario_estudiante_match else None,
             )
             notification_service.notificar_match(
                 db=db,
@@ -321,6 +329,7 @@ def registrar_swipe_empresa(
                 es_estudiante=False,
                 postulacion_id=postulacion.id if postulacion else None,
                 estudiante_id=swipe.estudiante_id,
+                fcm_token=usuario_empresa_match.fcm_token if usuario_empresa_match else None,
             )
 
     db.commit()
