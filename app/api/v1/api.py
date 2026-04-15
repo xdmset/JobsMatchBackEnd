@@ -3,6 +3,7 @@ from app.api.v1.endpoints import (
     auth,
     matches,
     media,
+    notificaciones,
     payments,
     perfil_empresa,
     perfil_estudiante,
@@ -32,4 +33,9 @@ api_router.include_router(
     retroalimentacion.router,
     prefix="/retroalimentacion",
     tags=["Retroalimentacion"],
+)
+api_router.include_router(
+    notificaciones.router,
+    prefix="/notificaciones",
+    tags=["Notificaciones"],
 )

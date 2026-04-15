@@ -1,11 +1,17 @@
 from fastapi import Depends, HTTPException, status
 
-from app.core.fastapi_users import current_active_user
+from app.core.fastapi_users import current_active_user, current_active_user_optional
 from app.core.enums import NombreRol
 from app.models.user import User
 
 
 def get_current_user(user: User = Depends(current_active_user)) -> User:
+    return user
+
+
+def get_current_user_optional(
+    user: User | None = Depends(current_active_user_optional),
+) -> User | None:
     return user
 
 

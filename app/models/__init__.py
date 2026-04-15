@@ -11,3 +11,4 @@ from app.models.postulacion import Postulacion
 from app.models.retroalimentacion import Retroalimentacion
 from app.models.plan import Plan
 from app.models.suscripcion import Suscripcion
+from app.models.notificacion import Notificacion
