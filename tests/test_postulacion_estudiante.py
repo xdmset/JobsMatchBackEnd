@@ -8,7 +8,6 @@ from sqlalchemy.orm import sessionmaker
 
 from app.api.v1.endpoints.postulaciones import (
     crear_postulacion_web,
-    listar_postulaciones_empresa,
     listar_postulaciones_estudiante,
     actualizar_estado,
 )
@@ -18,11 +17,9 @@ from app.crud.crud_vacante import create_vacante
 from app.db.base import Base
 from app.models.perfil_empresa import PerfilEmpresa
 from app.models.perfil_estudiante import PerfilEstudiante
-from app.models.postulacion import Postulacion
 from app.models.retroalimentacion import Retroalimentacion
 from app.models.rol import Role
 from app.models.user import User
-from app.schemas.interaccion_swipe import SwipeCreate
 from app.schemas.perfil_empresa import PerfilEmpresaCreate
 from app.schemas.perfil_estudiante import PerfilEstudianteCreate
 from app.schemas.postulacion import CambiarEstadoPostulacion, PostulacionWebCreate, RetroalimentacionCreate

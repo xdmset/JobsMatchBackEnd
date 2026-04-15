@@ -124,6 +124,7 @@ def actualizar_estado(
     # Notificar al estudiante del cambio de estado
     vacante = db.query(Vacante).filter(Vacante.id == postulacion.vacante_id).first()
     vacante_titulo = vacante.titulo if vacante else "la vacante"
+    usuario_estudiante = db.query(User).filter(User.id == postulacion.estudiante_id).first()
     notification_service.notificar_cambio_estado_postulacion(
         db=db,
         estudiante_id=postulacion.estudiante_id,
@@ -131,6 +132,7 @@ def actualizar_estado(
         nuevo_estado=data.nuevo_estado,
         vacante_id=postulacion.vacante_id,
         postulacion_id=postulacion_id,
+        fcm_token=usuario_estudiante.fcm_token if usuario_estudiante else None,
     )
 
     db.commit()

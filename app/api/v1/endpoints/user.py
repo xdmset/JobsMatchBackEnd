@@ -7,6 +7,8 @@ from app.core.security import get_password_hash, verify_password
 from app.crud.crud_user import create_user, delete_user, get_user_by_email, get_users
 from app.db.session import get_db
 from app.models.user import User as UserModel
+from pydantic import BaseModel
+
 from app.schemas.user import PasswordChange, PremiumSyncResponse, User, UserCreate, UserMe
 from app.services.profile_media import serialize_empresa_profile, serialize_estudiante_profile
 from app.services.subscription_service import sync_all_users_premium_status, sync_user_premium_status
@@ -96,6 +98,23 @@ def change_password(
     user.password_hash = get_password_hash(payload.new_password)
     db.commit()
     return {"detail": "Password actualizado"}
+
+class FCMTokenUpdate(BaseModel):
+    fcm_token: str
+
+
+@router.put("/me/fcm-token", status_code=204)
+def actualizar_fcm_token(
+    body: FCMTokenUpdate,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
+):
+    user = db.query(UserModel).filter(UserModel.id == current_user.id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    user.fcm_token = body.fcm_token
+    db.commit()
+
 
 @router.delete("/{user_id}", response_model=User)
 def remove_user(

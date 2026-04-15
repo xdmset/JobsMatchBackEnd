@@ -18,6 +18,7 @@ class User(Base):
     is_verified = Column(Boolean, default=False, server_default="0", nullable=False)
     es_premium = Column(Boolean, default=False)
     fecha_registro = Column(DateTime(timezone=True), server_default=func.now())
+    fcm_token = Column(String(512), nullable=True)
 
     rol = relationship("Role", back_populates="usuarios")
     perfil_estudiante = relationship("PerfilEstudiante", back_populates="user", uselist=False, cascade="all, delete-orphan")
