@@ -20,6 +20,7 @@ from app.schemas.interaccion_swipe import (
     CandidatoEstadoItem,
     SwipeCreate,
     SwipeEmpresaCreate,
+    VacanteInteraccionEstudiante,
     VacanteMatchEstudiante,
     VacanteRechazadaPorEmpresa,
     VacanteSwipeEstudiante,
@@ -256,6 +257,13 @@ def registrar_swipe_empresa(
         raise HTTPException(status_code=404, detail="Vacante no encontrada")
     if vacante.empresa_id != empresa_id:
         raise HTTPException(status_code=403, detail="La vacante no pertenece a la empresa")
+
+    # Bug fix: verificar que el estudiante existe y está activo
+    estudiante_usuario = db.query(User).filter(User.id == swipe.estudiante_id).first()
+    if not estudiante_usuario:
+        raise HTTPException(status_code=404, detail="Estudiante no encontrado")
+    if not estudiante_usuario.is_active:
+        raise HTTPException(status_code=400, detail="El estudiante no tiene una cuenta activa")
 
     interaccion_existente = crud_swipe.get_swipe_empresa(
         db,
@@ -645,3 +653,160 @@ def _get_candidatos_by_estado(
             )
             for swipe, perfil, user, vacante in rows
         ]
+
+
+# --- Helpers para estado unificado ---
+
+
+def _calc_estado_interaccion_estudiante(
+    swipe: "InteraccionSwipe | None",
+    swipe_emp: "InteraccionSwipeEmpresa | None",
+    match: "object | None",
+) -> str:
+    """Determina el estado de interacción desde la perspectiva del estudiante."""
+    if match:
+        return "match"
+    if swipe is not None:
+        return "pendiente" if swipe.interes_estudiante else "rechazado"
+    if swipe_emp is not None:
+        return "rechazado_por_empresa" if not swipe_emp.interes_empresa else "prospecto"
+    return "desconocido"
+
+
+# --- Endpoints de interacciones unificadas ---
+
+
+@router.get("/{estudiante_id}/interacciones", response_model=list[VacanteInteraccionEstudiante])
+def get_student_interacciones(
+    estudiante_id: int,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Vista unificada de todas las interacciones del estudiante con vacantes.
+
+    Devuelve cada vacante con su estado de interacción:
+    - **pendiente**             – el estudiante dio like, la empresa no ha respondido
+    - **match**                 – ambas partes dieron like
+    - **rechazado**             – el estudiante rechazó la vacante
+    - **rechazado_por_empresa** – la empresa rechazó al estudiante
+    - **prospecto**             – la empresa dio like, el estudiante aún no responde
+    """
+    ensure_same_user(current_user, estudiante_id, NombreRol.estudiante.value)
+
+    rows = crud_swipe.get_student_interactions_summary(
+        db, estudiante_id=estudiante_id, skip=skip, limit=limit
+    )
+
+    result = []
+    for vacante, swipe, swipe_emp, match in rows:
+        estado_interaccion = _calc_estado_interaccion_estudiante(swipe, swipe_emp, match)
+        fecha_interaccion = None
+        if swipe is not None:
+            fecha_interaccion = swipe.fecha_actualizacion
+        elif swipe_emp is not None:
+            fecha_interaccion = swipe_emp.fecha_actualizacion
+
+        result.append(
+            VacanteInteraccionEstudiante(
+                **_vacante_to_dict(vacante),
+                estado_interaccion=estado_interaccion,
+                fecha_interaccion=fecha_interaccion,
+                fecha_match=match.fecha_match if match else None,
+            )
+        )
+    return result
+
+
+@router.get(
+    "/empresa/{empresa_id}/interacciones",
+    response_model=list[CandidatoEstadoItem],
+)
+def get_empresa_interacciones_todas(
+    empresa_id: int,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Vista unificada de todas las interacciones de la empresa con candidatos
+    (todas las vacantes combinadas).
+
+    Devuelve cada candidato con su estado:
+    - **match**     – match confirmado
+    - **rechazado** – empresa rechazó al candidato
+    - **pendiente** – candidato dio like, empresa aún no responde
+    """
+    ensure_same_user(current_user, empresa_id, NombreRol.empresa.value)
+
+    rows = crud_swipe.get_empresa_interactions_summary(
+        db, empresa_id=empresa_id, vacante_id=None, skip=skip, limit=limit
+    )
+
+    return [
+        CandidatoEstadoItem(
+            estudiante_id=user.id,
+            email=user.email,
+            es_premium=bool(user.es_premium),
+            fecha_registro=user.fecha_registro,
+            vacante_id=vacante.id,
+            vacante_titulo=vacante.titulo,
+            estado_candidato=estado,
+            fecha_interaccion=fecha_interaccion,
+            perfil_estudiante=serialize_estudiante_profile(perfil),
+        )
+        for estado, perfil, user, vacante, fecha_interaccion in rows
+    ]
+
+
+@router.get(
+    "/empresa/{empresa_id}/vacante/{vacante_id}/interacciones",
+    response_model=list[CandidatoEstadoItem],
+)
+def get_empresa_interacciones_por_vacante(
+    empresa_id: int,
+    vacante_id: int,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Vista unificada de interacciones de la empresa para una vacante específica.
+
+    Devuelve cada candidato con su estado:
+    - **match**     – match confirmado
+    - **rechazado** – empresa rechazó al candidato
+    - **pendiente** – candidato dio like, empresa aún no responde
+    """
+    ensure_same_user(current_user, empresa_id, NombreRol.empresa.value)
+
+    vacante = crud_swipe.get_vacante(db, vacante_id)
+    if not vacante:
+        raise HTTPException(status_code=404, detail="Vacante no encontrada")
+    if vacante.empresa_id != empresa_id:
+        raise HTTPException(
+            status_code=403, detail="La vacante no pertenece a la empresa"
+        )
+
+    rows = crud_swipe.get_empresa_interactions_summary(
+        db, empresa_id=empresa_id, vacante_id=vacante_id, skip=skip, limit=limit
+    )
+
+    return [
+        CandidatoEstadoItem(
+            estudiante_id=user.id,
+            email=user.email,
+            es_premium=bool(user.es_premium),
+            fecha_registro=user.fecha_registro,
+            vacante_id=vac.id,
+            vacante_titulo=vac.titulo,
+            estado_candidato=estado,
+            fecha_interaccion=fecha_interaccion,
+            perfil_estudiante=serialize_estudiante_profile(perfil),
+        )
+        for estado, perfil, user, vac, fecha_interaccion in rows
+    ]
