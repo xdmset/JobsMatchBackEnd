@@ -52,6 +52,39 @@ class VacanteRechazadaPorEmpresa(VacanteSwipeEstudiante):
     fecha_rechazo_empresa: datetime
 
 
+# --- Schema unificado de interacciones para estudiante ---
+
+
+class VacanteInteraccionEstudiante(BaseModel):
+    """Vacante con estado unificado de interacción para vista del estudiante."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    empresa_id: int
+    titulo: str
+    descripcion: str
+    requisitos: Optional[str] = None
+    tipo_contrato: Optional[str] = None
+    modalidad: str
+    ubicacion: Optional[str] = None
+    sueldo_minimo: Optional[float] = None
+    sueldo_maximo: Optional[float] = None
+    moneda: Optional[str] = None
+    estado: str
+    fecha_publicacion: datetime
+
+    # Estado de la interacción:
+    # "pendiente"             – estudiante dio like, empresa no ha respondido
+    # "match"                 – ambos dieron like
+    # "rechazado"             – estudiante dio dislike a la vacante
+    # "rechazado_por_empresa" – empresa dio dislike al estudiante
+    # "prospecto"             – empresa dio like, estudiante aún no responde
+    estado_interaccion: str
+    fecha_interaccion: Optional[datetime] = None  # swipe del estudiante o empresa (el más reciente)
+    fecha_match: Optional[datetime] = None
+
+
 # --- Schemas para candidatos filtrados por estado (empresas) ---
 
 

@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional
 from sqlalchemy.orm import Session
-from sqlalchemy import case
+from sqlalchemy import case, or_
 
 from app.models.interaccion_swipe import InteraccionSwipe
 from app.models.interaccion_swipe_empresa import InteraccionSwipeEmpresa
@@ -112,6 +112,13 @@ def get_candidate_feed_for_company(
     nivel_academico: str | None = None,
     habilidad: str | None = None,
 ):
+    """
+    Candidatos que la empresa aún no ha evaluado para esta vacante.
+    Excluye:
+    - Candidatos donde la empresa ya hizo swipe (cualquier dirección).
+    - Candidatos que rechazaron la vacante (interes_estudiante=False).
+    Muestra primero a candidatos que dieron like (interes_estudiante=True).
+    """
     query = (
         db.query(PerfilEstudiante, User, InteraccionSwipe)
         .join(User, User.id == PerfilEstudiante.usuario_id)
@@ -127,6 +134,13 @@ def get_candidate_feed_for_company(
             & (InteraccionSwipe.vacante_id == vacante_id),
         )
         .filter(InteraccionSwipeEmpresa.id.is_(None))
+        # Excluir candidatos que rechazaron la vacante; mostrar quienes dieron like o no han respondido
+        .filter(
+            or_(
+                InteraccionSwipe.id.is_(None),
+                InteraccionSwipe.interes_estudiante.is_(True),
+            )
+        )
         .filter(User.is_active.is_(True))
         .order_by(
             User.es_premium.desc(),
@@ -160,6 +174,14 @@ def get_vacante_feed_for_student(
     ubicacion: str | None = None,
     sueldo_min: float | None = None,
 ):
+    """
+    Vacantes que el estudiante aún no ha visto.
+    Excluye:
+    - Vacantes donde el estudiante ya hizo swipe (cualquier dirección).
+    - Vacantes donde la empresa ya rechazó al estudiante (interes_empresa=False).
+    """
+    # Alias para el rechazo de empresa: solo filtramos joins con interes_empresa=False
+    empresa_rechazo = InteraccionSwipeEmpresa
     query = (
         db.query(Vacante)
         .join(User, User.id == Vacante.empresa_id)
@@ -168,7 +190,15 @@ def get_vacante_feed_for_student(
             (InteraccionSwipe.estudiante_id == estudiante_id)
             & (InteraccionSwipe.vacante_id == Vacante.id),
         )
+        .outerjoin(
+            empresa_rechazo,
+            (empresa_rechazo.empresa_id == Vacante.empresa_id)
+            & (empresa_rechazo.estudiante_id == estudiante_id)
+            & (empresa_rechazo.vacante_id == Vacante.id)
+            & (empresa_rechazo.interes_empresa.is_(False)),
+        )
         .filter(InteraccionSwipe.id.is_(None))
+        .filter(empresa_rechazo.id.is_(None))
         .filter(Vacante.estado == "activa")
         .order_by(User.es_premium.desc(), Vacante.fecha_publicacion.desc(), Vacante.id.desc())
     )
@@ -434,3 +464,92 @@ def get_candidatos_pendientes(
         query = query.filter(Vacante.id == vacante_id)
 
     return query.offset(skip).limit(limit).all()
+
+
+# --- Funciones para vistas unificadas de interacciones ---
+
+
+def get_student_interactions_summary(
+    db: Session,
+    *,
+    estudiante_id: int,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[tuple]:
+    """
+    Todas las vacantes con las que el estudiante ha tenido alguna interacción
+    (sea de su parte o de la empresa).
+    Fila: (Vacante, InteraccionSwipe|None, InteraccionSwipeEmpresa|None, Match|None)
+
+    Estado se determina en el endpoint:
+    - match                : Match existe
+    - pendiente            : estudiante dio like, empresa no respondió
+    - rechazado            : estudiante dio dislike a la vacante
+    - rechazado_por_empresa: empresa dio dislike al estudiante
+    - prospecto            : empresa dio like, estudiante aún no responde
+    """
+    return (
+        db.query(Vacante, InteraccionSwipe, InteraccionSwipeEmpresa, Match)
+        .outerjoin(
+            InteraccionSwipe,
+            (InteraccionSwipe.vacante_id == Vacante.id)
+            & (InteraccionSwipe.estudiante_id == estudiante_id),
+        )
+        .outerjoin(
+            InteraccionSwipeEmpresa,
+            (InteraccionSwipeEmpresa.vacante_id == Vacante.id)
+            & (InteraccionSwipeEmpresa.estudiante_id == estudiante_id)
+            & (InteraccionSwipeEmpresa.empresa_id == Vacante.empresa_id),
+        )
+        .outerjoin(
+            Match,
+            (Match.vacante_id == Vacante.id)
+            & (Match.estudiante_id == estudiante_id),
+        )
+        .filter(
+            or_(
+                InteraccionSwipe.id.isnot(None),
+                InteraccionSwipeEmpresa.id.isnot(None),
+            )
+        )
+        .order_by(Vacante.fecha_publicacion.desc(), Vacante.id.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+def get_empresa_interactions_summary(
+    db: Session,
+    *,
+    empresa_id: int,
+    vacante_id: int | None = None,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[tuple]:
+    """
+    Vista unificada de interacciones para empresa.
+    Combina: matches + rechazados_por_empresa + pendientes.
+    Devuelve lista de (estado, PerfilEstudiante, User, Vacante, fecha_interaccion).
+    """
+    results: list[tuple] = []
+
+    match_rows = get_candidatos_matches(
+        db, empresa_id=empresa_id, vacante_id=vacante_id, skip=0, limit=10_000
+    )
+    for match, perfil, user, vacante in match_rows:
+        results.append(("match", perfil, user, vacante, match.fecha_match))
+
+    rechazado_rows = get_candidatos_rechazados(
+        db, empresa_id=empresa_id, vacante_id=vacante_id, skip=0, limit=10_000
+    )
+    for swipe_emp, perfil, user, vacante in rechazado_rows:
+        results.append(("rechazado", perfil, user, vacante, swipe_emp.fecha_actualizacion))
+
+    pendiente_rows = get_candidatos_pendientes(
+        db, empresa_id=empresa_id, vacante_id=vacante_id, skip=0, limit=10_000
+    )
+    for swipe, perfil, user, vacante in pendiente_rows:
+        results.append(("pendiente", perfil, user, vacante, swipe.fecha_actualizacion))
+
+    return results[skip : skip + limit]
