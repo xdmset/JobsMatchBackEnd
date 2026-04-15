@@ -358,7 +358,15 @@ def main() -> int:
             current_user=company,
         )
 
-        vacancies = read_vacantes(skip=0, limit=100, modalidad=None, ubicacion=None, sueldo_min=None, db=db)
+        # Reactivar first_vacancy (fue pausada para probar el update de estado)
+        update_existing_vacante(
+            first_vacancy.id,
+            VacanteUpdate(estado="activa"),
+            db=db,
+            current_user=company,
+        )
+
+        vacancies = read_vacantes(skip=0, limit=100, modalidad=None, ubicacion=None, sueldo_min=None, db=db, current_user=None)
         assert len(vacancies) == 2
         filtered_vacancies = read_vacantes(
             skip=0,
@@ -367,6 +375,7 @@ def main() -> int:
             ubicacion=None,
             sueldo_min=None,
             db=db,
+            current_user=None,
         )
         assert len(filtered_vacancies) == 1
         assert filtered_vacancies[0].id == first_vacancy.id

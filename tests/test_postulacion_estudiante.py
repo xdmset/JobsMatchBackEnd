@@ -391,7 +391,7 @@ def test_roadmap_queda_en_error_cuando_gemini_falla():
         db.commit()
 
         with patch(
-            "app.services.feedback_roadmap_service._generate_with_gemini",
+            "app.services.feedback_roadmap_service._generate_roadmap_payload",
             side_effect=Exception("Connection timeout simulado"),
         ):
             resultado = generate_roadmap_for_retroalimentacion(db, retro)
@@ -440,7 +440,7 @@ def test_roadmap_usa_gemini_cuando_responde_correctamente():
         db.commit()
 
         with patch(
-            "app.services.feedback_roadmap_service._generate_with_gemini",
+            "app.services.feedback_roadmap_service._generate_roadmap_payload",
             return_value=gemini_response,
         ):
             resultado = generate_roadmap_for_retroalimentacion(db, retro)
