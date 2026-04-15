@@ -5,11 +5,13 @@ from sqlalchemy.orm import Session
 
 from app.core.dependencies import ensure_roles, ensure_same_user, get_current_user
 from app.core.enums import NombreRol
+from app.crud import crud_postulacion
 from app.db.session import get_db
-from app.schemas.postulacion import PostulacionWebCreate, PostulacionRead, CambiarEstadoPostulacion
 from app.models.postulacion import Postulacion
 from app.models.user import User
-from app.crud import crud_postulacion
+from app.models.vacante import Vacante
+from app.schemas.postulacion import CambiarEstadoPostulacion, PostulacionRead, PostulacionWebCreate
+from app.services import notification_service
 from app.services.feedback_roadmap_service import generate_roadmap_for_postulacion
 from app.services.subscription_service import build_plan_context
 
@@ -106,6 +108,18 @@ def actualizar_estado(
         postulacion_id=postulacion_id,
         nuevo_estado=data.nuevo_estado,
         feedback=feedback_payload,
+    )
+
+    # Notificar al estudiante del cambio de estado
+    vacante = db.query(Vacante).filter(Vacante.id == postulacion.vacante_id).first()
+    vacante_titulo = vacante.titulo if vacante else "la vacante"
+    notification_service.notificar_cambio_estado_postulacion(
+        db=db,
+        estudiante_id=postulacion.estudiante_id,
+        vacante_titulo=vacante_titulo,
+        nuevo_estado=data.nuevo_estado,
+        vacante_id=postulacion.vacante_id,
+        postulacion_id=postulacion_id,
     )
 
     db.commit()

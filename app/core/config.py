@@ -61,6 +61,10 @@ class Settings(BaseSettings):
     ROADMAP_AI_BASE_URL: str = "https://api.openai.com/v1/chat/completions"
     ROADMAP_AI_TIMEOUT_SECONDS: int = 30
 
+    # Firebase Cloud Messaging (FCM) para push notifications
+    FCM_CREDENTIALS_PATH: str = ""  # Ruta al archivo JSON de credenciales de servicio
+    FCM_ENABLED: bool = False  # Habilitar/deshabilitar envío de push notifications
+
     class Config:
         env_file = ".env"
 
