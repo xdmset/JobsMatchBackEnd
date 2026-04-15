@@ -1,7 +1,13 @@
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from app.core.dependencies import ensure_roles, ensure_same_user, get_current_user
+from app.core.dependencies import (
+    ensure_roles,
+    ensure_same_user,
+    get_current_user,
+    get_current_user_optional,
+    get_user_role,
+)
 from app.core.enums import NombreRol
 from app.models.user import User
 from app.schemas.vacante import (
@@ -48,19 +54,33 @@ def _ensure_valid_salary_range(sueldo_minimo: float | None, sueldo_maximo: float
 
 @router.get("/", response_model=List[Vacante])
 def read_vacantes(
-    skip: int = 0, 
-    limit: int = 100, 
+    skip: int = 0,
+    limit: int = 100,
     modalidad: Optional[str] = Query(None, description="Filtrar por remoto, presencial o hibrido"),
     ubicacion: Optional[str] = Query(None, description="Filtrar por ciudad o estado"),
     sueldo_min: Optional[float] = Query(None, description="Sueldo mínimo deseado"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
 ):
     """
-    Obtiene el listado de vacantes con soporte para filtros (RF-09).
+    Obtiene el listado de vacantes activas con soporte para filtros (RF-09).
+
+    Si el usuario autenticado es un estudiante, se excluyen las vacantes
+    donde ya hizo swipe (like o dislike).
     """
-    # Si no hay filtros, el CRUD get_vacantes funcionará como siempre,
-    # pero ahora le pasamos los nuevos parámetros opcionales.
-    return get_vacantes(db, skip=skip, limit=limit, modalidad=modalidad, ubicacion=ubicacion, sueldo_min=sueldo_min)
+    estudiante_id = None
+    if current_user and get_user_role(current_user) == NombreRol.estudiante.value:
+        estudiante_id = current_user.id
+
+    return get_vacantes(
+        db,
+        skip=skip,
+        limit=limit,
+        modalidad=modalidad,
+        ubicacion=ubicacion,
+        sueldo_min=sueldo_min,
+        estudiante_id=estudiante_id,
+    )
 
 
 @router.post("/{vacante_id}/view")

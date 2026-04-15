@@ -181,3 +181,256 @@ def get_vacante_feed_for_student(
         query = query.filter(Vacante.sueldo_minimo >= sueldo_min)
 
     return query.offset(skip).limit(limit).all()
+
+
+# --- Funciones para historial de swipes de estudiantes ---
+
+
+def get_student_likes(
+    db: Session,
+    *,
+    estudiante_id: int,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[tuple[InteraccionSwipe, Vacante]]:
+    """Obtiene vacantes donde el estudiante dio like."""
+    return (
+        db.query(InteraccionSwipe, Vacante)
+        .join(Vacante, Vacante.id == InteraccionSwipe.vacante_id)
+        .join(User, User.id == Vacante.empresa_id)
+        .filter(
+            InteraccionSwipe.estudiante_id == estudiante_id,
+            InteraccionSwipe.interes_estudiante.is_(True),
+        )
+        .order_by(
+            User.es_premium.desc(),
+            InteraccionSwipe.fecha_actualizacion.desc(),
+            InteraccionSwipe.id.desc(),
+        )
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+def get_student_dislikes(
+    db: Session,
+    *,
+    estudiante_id: int,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[tuple[InteraccionSwipe, Vacante]]:
+    """Obtiene vacantes donde el estudiante dio dislike."""
+    return (
+        db.query(InteraccionSwipe, Vacante)
+        .join(Vacante, Vacante.id == InteraccionSwipe.vacante_id)
+        .join(User, User.id == Vacante.empresa_id)
+        .filter(
+            InteraccionSwipe.estudiante_id == estudiante_id,
+            InteraccionSwipe.interes_estudiante.is_(False),
+        )
+        .order_by(
+            User.es_premium.desc(),
+            InteraccionSwipe.fecha_actualizacion.desc(),
+            InteraccionSwipe.id.desc(),
+        )
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+def get_student_pending(
+    db: Session,
+    *,
+    estudiante_id: int,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[tuple[InteraccionSwipe, Vacante]]:
+    """Obtiene vacantes donde el estudiante dio like pero la empresa no ha respondido."""
+    return (
+        db.query(InteraccionSwipe, Vacante)
+        .join(Vacante, Vacante.id == InteraccionSwipe.vacante_id)
+        .join(User, User.id == Vacante.empresa_id)
+        .outerjoin(
+            InteraccionSwipeEmpresa,
+            (InteraccionSwipeEmpresa.empresa_id == Vacante.empresa_id)
+            & (InteraccionSwipeEmpresa.estudiante_id == estudiante_id)
+            & (InteraccionSwipeEmpresa.vacante_id == Vacante.id),
+        )
+        .filter(
+            InteraccionSwipe.estudiante_id == estudiante_id,
+            InteraccionSwipe.interes_estudiante.is_(True),
+            InteraccionSwipeEmpresa.id.is_(None),
+        )
+        .order_by(
+            User.es_premium.desc(),
+            InteraccionSwipe.fecha_actualizacion.desc(),
+            InteraccionSwipe.id.desc(),
+        )
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+def get_student_rejected_by_company(
+    db: Session,
+    *,
+    estudiante_id: int,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[tuple[InteraccionSwipeEmpresa, Vacante]]:
+    """Obtiene vacantes donde la empresa rechazo al estudiante."""
+    return (
+        db.query(InteraccionSwipeEmpresa, Vacante)
+        .join(Vacante, Vacante.id == InteraccionSwipeEmpresa.vacante_id)
+        .join(User, User.id == Vacante.empresa_id)
+        .filter(
+            InteraccionSwipeEmpresa.estudiante_id == estudiante_id,
+            InteraccionSwipeEmpresa.interes_empresa.is_(False),
+        )
+        .order_by(
+            User.es_premium.desc(),
+            InteraccionSwipeEmpresa.fecha_actualizacion.desc(),
+            InteraccionSwipeEmpresa.id.desc(),
+        )
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+def get_student_accepted(
+    db: Session,
+    *,
+    estudiante_id: int,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[tuple[Match, Vacante, InteraccionSwipe | None]]:
+    """Obtiene vacantes donde hay match (ambos dieron like)."""
+    return (
+        db.query(Match, Vacante, InteraccionSwipe)
+        .join(Vacante, Vacante.id == Match.vacante_id)
+        .join(User, User.id == Vacante.empresa_id)
+        .outerjoin(
+            InteraccionSwipe,
+            (InteraccionSwipe.estudiante_id == Match.estudiante_id)
+            & (InteraccionSwipe.vacante_id == Match.vacante_id),
+        )
+        .filter(Match.estudiante_id == estudiante_id)
+        .order_by(
+            User.es_premium.desc(),
+            Match.fecha_match.desc(),
+            Match.id.desc(),
+        )
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+# --- Funciones para candidatos filtrados por estado (empresas) ---
+
+
+def get_candidatos_matches(
+    db: Session,
+    *,
+    empresa_id: int,
+    vacante_id: int | None = None,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[tuple[Match, PerfilEstudiante, User, Vacante]]:
+    """Obtiene candidatos con match para la empresa."""
+    query = (
+        db.query(Match, PerfilEstudiante, User, Vacante)
+        .join(Vacante, Vacante.id == Match.vacante_id)
+        .join(PerfilEstudiante, PerfilEstudiante.usuario_id == Match.estudiante_id)
+        .join(User, User.id == Match.estudiante_id)
+        .filter(Vacante.empresa_id == empresa_id)
+        .order_by(
+            User.es_premium.desc(),
+            Match.fecha_match.desc(),
+            Match.id.desc(),
+        )
+    )
+
+    if vacante_id is not None:
+        query = query.filter(Vacante.id == vacante_id)
+
+    return query.offset(skip).limit(limit).all()
+
+
+def get_candidatos_rechazados(
+    db: Session,
+    *,
+    empresa_id: int,
+    vacante_id: int | None = None,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[tuple[InteraccionSwipeEmpresa, PerfilEstudiante, User, Vacante]]:
+    """Obtiene candidatos rechazados por la empresa."""
+    query = (
+        db.query(InteraccionSwipeEmpresa, PerfilEstudiante, User, Vacante)
+        .join(Vacante, Vacante.id == InteraccionSwipeEmpresa.vacante_id)
+        .join(
+            PerfilEstudiante,
+            PerfilEstudiante.usuario_id == InteraccionSwipeEmpresa.estudiante_id,
+        )
+        .join(User, User.id == InteraccionSwipeEmpresa.estudiante_id)
+        .filter(
+            InteraccionSwipeEmpresa.empresa_id == empresa_id,
+            InteraccionSwipeEmpresa.interes_empresa.is_(False),
+        )
+        .order_by(
+            User.es_premium.desc(),
+            InteraccionSwipeEmpresa.fecha_actualizacion.desc(),
+            InteraccionSwipeEmpresa.id.desc(),
+        )
+    )
+
+    if vacante_id is not None:
+        query = query.filter(Vacante.id == vacante_id)
+
+    return query.offset(skip).limit(limit).all()
+
+
+def get_candidatos_pendientes(
+    db: Session,
+    *,
+    empresa_id: int,
+    vacante_id: int | None = None,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[tuple[InteraccionSwipe, PerfilEstudiante, User, Vacante]]:
+    """Obtiene candidatos que dieron like pero la empresa no ha respondido."""
+    query = (
+        db.query(InteraccionSwipe, PerfilEstudiante, User, Vacante)
+        .join(Vacante, Vacante.id == InteraccionSwipe.vacante_id)
+        .join(
+            PerfilEstudiante,
+            PerfilEstudiante.usuario_id == InteraccionSwipe.estudiante_id,
+        )
+        .join(User, User.id == InteraccionSwipe.estudiante_id)
+        .outerjoin(
+            InteraccionSwipeEmpresa,
+            (InteraccionSwipeEmpresa.empresa_id == empresa_id)
+            & (InteraccionSwipeEmpresa.estudiante_id == InteraccionSwipe.estudiante_id)
+            & (InteraccionSwipeEmpresa.vacante_id == InteraccionSwipe.vacante_id),
+        )
+        .filter(
+            Vacante.empresa_id == empresa_id,
+            InteraccionSwipe.interes_estudiante.is_(True),
+            InteraccionSwipeEmpresa.id.is_(None),
+        )
+        .order_by(
+            User.es_premium.desc(),
+            InteraccionSwipe.fecha_actualizacion.desc(),
+            InteraccionSwipe.id.desc(),
+        )
+    )
+
+    if vacante_id is not None:
+        query = query.filter(Vacante.id == vacante_id)
+
+    return query.offset(skip).limit(limit).all()

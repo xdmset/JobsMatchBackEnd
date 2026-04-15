@@ -20,23 +20,41 @@ def get_vacante(db: Session, vacante_id: int):
     return db.query(Vacante).filter(Vacante.id == vacante_id).first()
 
 def get_vacantes(
-    db: Session, 
-    skip: int = 0, 
-    limit: int = 100, 
-    modalidad: str = None, 
-    ubicacion: str = None, 
-    sueldo_min: float = None
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
+    modalidad: str = None,
+    ubicacion: str = None,
+    sueldo_min: float = None,
+    estudiante_id: int | None = None,
 ):
-    """RF-09: Obtener vacantes con filtros dinámicos."""
+    """RF-09: Obtener vacantes con filtros dinámicos.
+
+    Si estudiante_id es proporcionado, excluye vacantes donde el estudiante
+    ya hizo swipe (like o dislike).
+    """
     query = db.query(Vacante).join(User, User.id == Vacante.empresa_id)
-    
+
+    # Excluir vacantes ya interactuadas por el estudiante
+    if estudiante_id is not None:
+        query = query.outerjoin(
+            InteraccionSwipe,
+            and_(
+                InteraccionSwipe.estudiante_id == estudiante_id,
+                InteraccionSwipe.vacante_id == Vacante.id,
+            ),
+        ).filter(InteraccionSwipe.id.is_(None))
+
+    # Solo mostrar vacantes activas
+    query = query.filter(Vacante.estado == "activa")
+
     if modalidad:
         query = query.filter(Vacante.modalidad == modalidad)
     if ubicacion:
         query = query.filter(Vacante.ubicacion.contains(ubicacion))
     if sueldo_min:
         query = query.filter(Vacante.sueldo_minimo >= sueldo_min)
-    
+
     return (
         query.order_by(User.es_premium.desc(), Vacante.fecha_publicacion.desc(), Vacante.id.desc())
         .offset(skip)
