@@ -51,6 +51,17 @@ def crear_postulacion_web(
     db.refresh(nueva_postulacion)
     return nueva_postulacion
 
+@router.get("/estudiante/{estudiante_id}", response_model=List[PostulacionRead])
+def listar_postulaciones_estudiante(
+    estudiante_id: int,
+    estado: str | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ensure_same_user(current_user, estudiante_id, NombreRol.estudiante.value)
+    return crud_postulacion.listar_postulaciones_estudiante(db, estudiante_id, estado=estado)
+
+
 @router.get("/empresa/{empresa_id}", response_model=List[PostulacionRead])
 def listar_postulaciones_empresa(
     empresa_id: int,

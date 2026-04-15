@@ -439,11 +439,12 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from datetime import datetime, timezone
 from typing import Any
 
-import requests
+import google.generativeai as genai
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -452,6 +453,8 @@ from app.models.postulacion import Postulacion
 from app.models.retroalimentacion import Retroalimentacion
 from app.models.vacante import Vacante
 from app.schemas.retroalimentacion import RoadmapData
+
+logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """Eres un mentor profesional especializado en empleabilidad, desarrollo de habilidades y preparación de estudiantes para el mercado laboral.
 
@@ -637,8 +640,7 @@ def generate_roadmap_for_retroalimentacion(
     vacante = db.query(Vacante).filter(Vacante.id == postulacion.vacante_id).first()
 
     context = _build_context_payload(retroalimentacion, postulacion, perfil, vacante)
-    
-    # Reiniciamos estado antes de llamar a Gemini
+
     retroalimentacion.roadmap_json = None
     retroalimentacion.roadmap_generado_en = None
     retroalimentacion.roadmap_error = None
@@ -651,10 +653,24 @@ def generate_roadmap_for_retroalimentacion(
         retroalimentacion.roadmap_estado = "generado"
         retroalimentacion.roadmap_generado_en = datetime.now(timezone.utc)
         retroalimentacion.roadmap_error = None
+        logger.info(
+            "Roadmap generado correctamente para postulacion_id=%s usando modo=%s",
+            postulacion.id,
+            settings.ROADMAP_AI_MODE,
+        )
     except Exception as exc:
+        error_detail = str(exc)
         retroalimentacion.roadmap_json = None
         retroalimentacion.roadmap_estado = "error"
-        retroalimentacion.roadmap_error = str(exc)
+        retroalimentacion.roadmap_error = error_detail
+        logger.error(
+            "Error generando roadmap para postulacion_id=%s | modo=%s | modelo=%s | error: %s",
+            postulacion.id,
+            settings.ROADMAP_AI_MODE,
+            settings.ROADMAP_AI_MODEL,
+            error_detail,
+            exc_info=True,
+        )
 
     db.flush()
     return retroalimentacion
@@ -689,53 +705,44 @@ def _build_context_payload(
 
 def _generate_with_gemini(context: dict[str, Any]) -> dict[str, Any]:
     """
-    Se comunica con Gemini usando el endpoint de compatibilidad OpenAI.
+    Genera el roadmap usando el SDK nativo de Google Generative AI.
     """
     if not settings.ROADMAP_AI_API_KEY:
         raise ValueError("ROADMAP_AI_API_KEY no está configurada")
 
-    payload = {
-        "model": settings.ROADMAP_AI_MODEL,
-        "temperature": 0.3, # Baja temperatura para mayor consistencia en el JSON
-        "messages": [
-            {
-                "role": "system",
-                "content": SYSTEM_PROMPT.format(**context),
-            }
-        ],
-    }
-
-    # Si usas GPT-4o, esto es necesario. Para Gemini, ayuda a forzar el formato.
-    if "gemini" not in settings.ROADMAP_AI_MODEL.lower():
-        payload["response_format"] = {"type": "json_object"}
-
-    response = requests.post(
-        settings.ROADMAP_AI_BASE_URL,
-        headers={
-            "Authorization": f"Bearer {settings.ROADMAP_AI_API_KEY}",
-            "Content-Type": "application/json",
-        },
-        json=payload,
-        timeout=settings.ROADMAP_AI_TIMEOUT_SECONDS,
+    logger.info(
+        "Llamando a Gemini SDK | modelo=%s | timeout=%ss",
+        settings.ROADMAP_AI_MODEL,
+        settings.ROADMAP_AI_TIMEOUT_SECONDS,
     )
-    
-    response.raise_for_status()
-    data = response.json()
-    content = data["choices"][0]["message"]["content"]
-    
-    # Limpiamos posibles markdown fences (```json ... ```)
+
+    genai.configure(api_key=settings.ROADMAP_AI_API_KEY)
+
+    model = genai.GenerativeModel(
+        model_name=settings.ROADMAP_AI_MODEL,
+        system_instruction=SYSTEM_PROMPT.format(**context),
+    )
+
+    response = model.generate_content(
+        "Genera el roadmap personalizado en JSON según las instrucciones del sistema.",
+        generation_config=genai.GenerationConfig(temperature=0.3),
+        request_options={"timeout": settings.ROADMAP_AI_TIMEOUT_SECONDS},
+    )
+
+    logger.info("Respuesta de Gemini SDK recibida | finish_reason=%s", response.candidates[0].finish_reason)
+
+    content = response.text
     clean_content = _strip_code_fences(content)
     return json.loads(clean_content)
 
 
 def _generate_roadmap_payload(context: dict[str, Any]) -> dict[str, Any]:
     if settings.ROADMAP_AI_MODE.lower() == "heuristic":
+        logger.info("Modo heurístico activo (ROADMAP_AI_MODE=heuristic)")
         return _generate_heuristic(context)
 
-    try:
-        return _generate_with_gemini(context)
-    except Exception:
-        return _generate_heuristic(context)
+    logger.info("Intentando generación con Gemini SDK (ROADMAP_AI_MODE=%s)", settings.ROADMAP_AI_MODE)
+    return _generate_with_gemini(context)
 
 def _strip_code_fences(value: str) -> str:
     cleaned = value.strip()

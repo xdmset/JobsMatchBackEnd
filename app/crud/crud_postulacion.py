@@ -57,6 +57,18 @@ def crear_postulacion_si_aplica(
     return nueva_postulacion
 
 
+def listar_postulaciones_estudiante(
+    db: Session,
+    estudiante_id: int,
+    *,
+    estado: str | None = None,
+):
+    query = db.query(Postulacion).filter(Postulacion.estudiante_id == estudiante_id)
+    if estado:
+        query = query.filter(Postulacion.estado == estado)
+    return query.order_by(Postulacion.fecha_actualizacion.desc(), Postulacion.id.desc()).all()
+
+
 def listar_postulaciones_empresa(
     db: Session,
     empresa_id: int,
