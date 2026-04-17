@@ -57,7 +57,7 @@ class Settings(BaseSettings):
 
     ROADMAP_AI_MODE: str = "heuristic"
     ROADMAP_AI_API_KEY: str = ""
-    ROADMAP_AI_MODEL: str = "gemini-1.5-flash"
+    ROADMAP_AI_MODEL: str = "claude-opus-4-6"
     ROADMAP_AI_TIMEOUT_SECONDS: int = 60
 
     # Firebase Cloud Messaging (FCM) para push notifications
